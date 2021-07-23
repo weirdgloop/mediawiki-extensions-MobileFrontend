@@ -624,7 +624,10 @@ class MobileFrontendHooks {
 			}
 
 			// Only override contributions page if AMC is disabled
-			if ( $user->isSafeToLoad() && !$userMode->isEnabled() ) {
+			if ( $user->isSafeToLoad() &&
+				!$userMode->isEnabled() &&
+				!$featureManager->isFeatureAvailableForCurrentUser( 'MFUseDesktopContributionsPage' )
+			) {
 				/* Special:MobileContributions redefines Special:History in
 				 * such a way that for Special:Contributions/Foo, Foo is a
 				 * username (in Special:History/Foo, Foo is a page name).

@@ -809,6 +809,13 @@
 				"amc": true
 			}
 		},
+		"MFUseDesktopContributionsPage": {
+			"value": {
+				"base": false,
+				"beta": false,
+				"amc": true
+			}
+		},
 		"MFEnableXAnalyticsLogging": {
 			"value": false
 		},
