@@ -1,7 +1,6 @@
 <?php
 
 use MediaWiki\MediaWikiServices;
-use MobileFrontend\ContentProviders\ContentProviderFactory;
 use MobileFrontend\Features\BetaUserMode;
 use MobileFrontend\Features\Feature;
 use MobileFrontend\Features\FeaturesManager;
@@ -13,11 +12,6 @@ return [
 	'MobileFrontend.Config' => function ( MediaWikiServices $services ) {
 		return $services->getService( 'ConfigFactory' )
 			->makeConfig( 'mobilefrontend' );
-	},
-	'MobileFrontend.ContentProviderFactory' =>
-	function ( MediaWikiServices $services ): ContentProviderFactory {
-		$config = $services->getService( 'MobileFrontend.Config' );
-		return new ContentProviderFactory( $config );
 	},
 
 	'MobileFrontend.UserModes' => function ( MediaWikiServices $services ) {
