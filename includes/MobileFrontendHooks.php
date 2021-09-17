@@ -630,7 +630,13 @@ class MobileFrontendHooks {
 				 * Redirect people here as this is essential
 				 * Special:Contributions without the bells and whistles.
 				 */
-				$list['Contributions'] = 'SpecialMobileContributions';
+				$list['Contributions'] = [
+					"class" => "SpecialMobileContributions",
+					"services" => [
+						"NamespaceInfo",
+						"RevisionFactory"
+					]
+				];
 			}
 
 		}
