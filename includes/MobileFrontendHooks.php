@@ -92,7 +92,8 @@ class MobileFrontendHooks implements
 	SkinAddFooterLinksHook,
 	BeforePageRedirectHook,
 	MediaWikiPerformActionHook,
-	GetCacheVaryCookiesHook,
+	// WGL - Keep MobileFrontend from varying on cookies as it conflicts with our own caching logic and causes unneeded cache disabling.
+	// GetCacheVaryCookiesHook,
 	SpecialPage_initListHook,
 	ListDefinedTagsHook,
 	ChangeTagsListActiveHook,
@@ -527,7 +528,8 @@ class MobileFrontendHooks implements
 	 * @param array &$cookies array of cookies name, add a value to it
 	 *                        if you want to add a cookie that have to vary cache options
 	 */
-	public function onGetCacheVaryCookies( $out, &$cookies ) {
+	// WGL - Keep MobileFrontend from varying on cookies as it conflicts with our own caching logic and causes unneeded cache disabling.
+	/*public function onGetCacheVaryCookies( $out, &$cookies ) {
 		// Enables mobile cookies on wikis w/o mobile domain
 		$cookies[] = MobileContext::USEFORMAT_COOKIE_NAME;
 		// Don't redirect to mobile if user had explicitly opted out of it
@@ -540,7 +542,7 @@ class MobileFrontendHooks implements
 			// beta cookie
 			$cookies[] = MobileContext::OPTIN_COOKIE_NAME;
 		}
-	}
+	}*/
 
 	/**
 	 * Generate config for usage inside MobileFrontend
