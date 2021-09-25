@@ -442,6 +442,7 @@ class MobileFrontendHooks {
 	 * @param array &$cookies array of cookies name, add a value to it
 	 *                        if you want to add a cookie that have to vary cache options
 	 */
+	/* WGL - Keep MobileFrontend from varying on cookies as it conflicts with our own caching logic and causes unneeded cache disabling.
 	public static function onGetCacheVaryCookies( $out, &$cookies ) {
 		$context = MediaWikiServices::getInstance()->getService( 'MobileFrontend.Context' );
 		$mobileUrlTemplate = $context->getMobileUrlTemplate();
@@ -459,7 +460,7 @@ class MobileFrontendHooks {
 		// only for HTTP but we don't vary on protocol.
 		$cookies[] = 'forceHTTPS';
 	}
-
+	*/
 	/**
 	 * Varies the parser cache if responsive images should have their variants
 	 * stripped from the parser output, since the transformation happens during
