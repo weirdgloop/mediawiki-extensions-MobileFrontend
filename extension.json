@@ -1156,9 +1156,6 @@
 		"ResourceLoaderTestModules": [
 			"MobileFrontendHooks::onResourceLoaderTestModules"
 		],
-		"GetCacheVaryCookies": [
-			"MobileFrontendHooks::onGetCacheVaryCookies"
-		],
 		"ResourceLoaderGetConfigVars": [
 			"MobileFrontendHooks::onResourceLoaderGetConfigVars"
 		],

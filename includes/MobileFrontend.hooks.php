@@ -375,6 +375,7 @@ class MobileFrontendHooks {
 	 *                        if you want to add a cookie that have to vary cache options
 	 * @return bool
 	 */
+	/* WGL - Keep MobileFrontend from varying on cookies as it conflicts with our own caching logic and causes unneeded cache disabling.
 	public static function onGetCacheVaryCookies( $out, &$cookies ) {
 		$context = MobileContext::singleton();
 		$mobileUrlTemplate = $context->getMobileUrlTemplate();
@@ -393,7 +394,7 @@ class MobileFrontendHooks {
 		$cookies[] = 'forceHTTPS';
 		return true;
 	}
-
+	*/
 	/**
 	 * Varies the parser cache if responsive images should have their variants
 	 * stripped from the parser output, since the transformation happens during
