@@ -425,7 +425,6 @@
 		"SkinAddFooterLinks": "MobileFrontendHooks",
 		"BeforePageRedirect": "MobileFrontendHooks",
 		"MediaWikiPerformAction": "MobileFrontendHooks",
-		"GetCacheVaryCookies": "MobileFrontendHooks",
 		"ListDefinedTags": [
 			"MobileFrontendHooks",
 			"Amc"
