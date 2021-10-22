@@ -671,6 +671,9 @@
 		]
 	},
 	"config": {
+		"MFCustomSiteModules": {
+			"value": false
+		},
 		"MFEnableFontChanger": {
 			"value": {
 				"base": true,

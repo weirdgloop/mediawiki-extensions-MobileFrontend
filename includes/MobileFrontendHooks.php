@@ -430,7 +430,8 @@ class MobileFrontendHooks {
 	public static function onResourceLoaderSiteStylesModulePages( $skin, &$pages ) {
 		$ctx = MobileContext::singleton();
 		$ucaseSkin = ucfirst( $skin );
-		if ( $ctx->shouldDisplayMobileView() ) {
+		// See https://phabricator.wikimedia.org/T270603#6721274
+		if ( $ctx->shouldDisplayMobileView() && $config->get('MFCustomSiteModules') ) {
 			$services = MediaWikiServices::getInstance();
 			$config = $services->getService( 'MobileFrontend.Config' );
 			unset( $pages['MediaWiki:Common.css'] );
@@ -457,7 +458,8 @@ class MobileFrontendHooks {
 		$ctx = MobileContext::singleton();
 		$services = MediaWikiServices::getInstance();
 		$config = $services->getService( 'MobileFrontend.Config' );
-		if ( $ctx->shouldDisplayMobileView() ) {
+		// See https://phabricator.wikimedia.org/T270603#6721274
+		if ( $ctx->shouldDisplayMobileView() && $config->get('MFCustomSiteModules') ) {
 			unset( $pages['MediaWiki:Common.js'] );
 			$pages['MediaWiki:Mobile.js'] = [ 'type' => 'script' ];
 			if ( !$config->get( 'MFSiteStylesRenderBlocking' ) ) {
