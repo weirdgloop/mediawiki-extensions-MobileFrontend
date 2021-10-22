@@ -430,10 +430,10 @@ class MobileFrontendHooks {
 	public static function onResourceLoaderSiteStylesModulePages( $skin, &$pages ) {
 		$ctx = MobileContext::singleton();
 		$ucaseSkin = ucfirst( $skin );
+		$services = MediaWikiServices::getInstance();
+		$config = $services->getService( 'MobileFrontend.Config' );
 		// See https://phabricator.wikimedia.org/T270603#6721274
 		if ( $ctx->shouldDisplayMobileView() && $config->get('MFCustomSiteModules') ) {
-			$services = MediaWikiServices::getInstance();
-			$config = $services->getService( 'MobileFrontend.Config' );
 			unset( $pages['MediaWiki:Common.css'] );
 			unset( $pages['MediaWiki:Print.css'] );
 			// MediaWiki:<skinname>.css suffers from the same problems as MediaWiki:Common.css
