@@ -24,7 +24,7 @@ class SpecialMobileLanguages extends MobileSpecialPage {
 		LanguageConverterFactory $languageConverterFactory,
 		LanguageNameUtils $languageNameUtils
 	) {
-		parent::__construct( 'MobileLanguages' );
+		parent::__construct( 'MobileLanguages', '', false );
 		$this->languageConverter = $languageConverterFactory->getLanguageConverter( $this->getContentLanguage() );
 		$this->languageNameUtils = $languageNameUtils;
 	}
