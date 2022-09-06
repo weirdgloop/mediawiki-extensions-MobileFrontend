@@ -781,8 +781,8 @@
 					10,
 					-1
 				],
-				"maxImages": 1000,
-				"maxHeadings": 4000,
+				"maxImages": 100000,
+				"maxHeadings": 100000,
 				"headings": [
 					"h1",
 					"h2",
