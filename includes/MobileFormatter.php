@@ -86,17 +86,4 @@ class MobileFormatter extends HtmlFormatter {
 
 		return $removals;
 	}
-
-	/**
-	 * Check whether the MobileFormatter can be applied to the text of a page.
-	 * @param string $text
-	 * @param array $options with 'maxHeadings' and 'maxImages' keys that limit the MobileFormatter
-	 *  to pages with less than or equal to that number of headings and images.
-	 * @return bool
-	 */
-	public static function canApply( $text, $options ) {
-		$headings = preg_match_all( '/<[hH][1-6]/', $text );
-		$imgs = preg_match_all( '/<img/', $text );
-		return $headings <= $options['maxHeadings'] && $imgs <= $options['maxImages'];
-	}
 }
