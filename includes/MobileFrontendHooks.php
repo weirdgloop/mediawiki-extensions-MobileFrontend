@@ -245,25 +245,20 @@ class MobileFrontendHooks {
 	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/OutputPageBeforeHTML
 	 *
 	 * Applies MobileFormatter to mobile viewed content
-	 * Also enables Related Articles in the footer in the beta mode.
-	 * Adds inline script to allow opening of sections while JS is still loading
 	 *
 	 * @param OutputPage $out the OutputPage object to which wikitext is added
 	 * @param string &$text the HTML to be wrapped inside the #mw-content-text element
 	 */
 	public static function onOutputPageBeforeHTML( $out, &$text ) {
+		// This hook can be executed more than once per page view if the page content is composed from
+		// multiple sources! Anything that doesn't depend on $text should use onBeforePageDisplay.
+
 		$services = MediaWikiServices::getInstance();
 		/** @var MobileContext $context */
 		$context = $services->getService( 'MobileFrontend.Context' );
 		$title = $context->getTitle();
 		$config = $services->getService( 'MobileFrontend.Config' );
-
 		$displayMobileView = $context->shouldDisplayMobileView();
-		// T204691
-		$theme = $config->get( 'MFManifestThemeColor' );
-		if ( $theme && $displayMobileView ) {
-			$out->addMeta( 'theme-color', $theme );
-		}
 
 		if ( !$title ) {
 			return;
@@ -308,8 +303,6 @@ class MobileFrontendHooks {
 			$text = ExtMobileFrontend::domParseWithContentProvider(
 				$provider, $out, $runMobileFormatter
 			);
-			$nonce = $out->getCSP()->getNonce();
-			$text = MakeSectionsTransform::interimTogglingSupport( $nonce ) . $text;
 		}
 	}
 
@@ -792,6 +785,7 @@ class MobileFrontendHooks {
 		$mfNoIndexPages = $config->get( 'MFNoindexPages' );
 		$isCanonicalLinkHandledByCore = $config->get( 'EnableCanonicalServerLink' );
 		$mfMobileUrlTemplate = $context->getMobileUrlTemplate();
+		$displayMobileView = $context->shouldDisplayMobileView();
 
 		$title = $skin->getTitle();
 
@@ -800,7 +794,7 @@ class MobileFrontendHooks {
 		if ( $mfMobileUrlTemplate && $mfNoIndexPages ) {
 			$link = false;
 
-			if ( !$context->shouldDisplayMobileView() ) {
+			if ( !$displayMobileView ) {
 				// add alternate link to desktop sites - bug T91183
 				$desktopUrl = $title->getFullURL();
 				$link = [
@@ -832,7 +826,7 @@ class MobileFrontendHooks {
 		}
 
 		// Set X-Analytics HTTP response header if necessary
-		if ( $context->shouldDisplayMobileView() ) {
+		if ( $displayMobileView ) {
 			$analyticsHeader = ( $mfEnableXAnalyticsLogging ? $context->getXAnalyticsHeader() : false );
 			if ( $analyticsHeader ) {
 				$resp = $out->getRequest()->response();
@@ -863,6 +857,18 @@ class MobileFrontendHooks {
 			// Allow modifications in mobile only mode
 			$hookContainer = $services->getHookContainer();
 			$hookContainer->run( 'BeforePageDisplayMobile', [ &$out, &$skin ] );
+		}
+
+		// T204691
+		$theme = $config->get( 'MFManifestThemeColor' );
+		if ( $theme && $displayMobileView ) {
+			$out->addMeta( 'theme-color', $theme );
+		}
+
+		if ( $displayMobileView ) {
+			// Adds inline script to allow opening of sections while JS is still loading
+			$nonce = $out->getCSP()->getNonce();
+			$out->prependHTML( MakeSectionsTransform::interimTogglingSupport( $nonce ) );
 		}
 	}
 
