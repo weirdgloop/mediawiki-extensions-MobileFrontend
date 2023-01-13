@@ -182,7 +182,8 @@ class SpecialMobileHistory extends MobileSpecialPageFeed {
 		$dbr = wfGetDB( DB_REPLICA, self::DB_REVISIONS_TABLE );
 		$conds = $this->getQueryConditions();
 		$options = [
-			'ORDER BY' => 'rev_timestamp DESC'
+			'ORDER BY' => 'rev_timestamp DESC',
+			'USE INDEX' => [ 'revision' => 'rev_page_timestamp' ],
 		];
 
 		$options['LIMIT'] = self::LIMIT + 1;
