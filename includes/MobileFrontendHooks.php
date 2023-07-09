@@ -253,25 +253,20 @@ class MobileFrontendHooks {
 	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/OutputPageBeforeHTML
 	 *
 	 * Applies MobileFormatter to mobile viewed content
-	 * Also enables Related Articles in the footer in the beta mode.
-	 * Adds inline script to allow opening of sections while JS is still loading
 	 *
 	 * @param OutputPage $out the OutputPage object to which wikitext is added
 	 * @param string &$text the HTML to be wrapped inside the #mw-content-text element
 	 */
 	public static function onOutputPageBeforeHTML( $out, &$text ) {
+		// This hook can be executed more than once per page view if the page content is composed from
+		// multiple sources! Anything that doesn't depend on $text should use onBeforePageDisplay.
+
 		$services = MediaWikiServices::getInstance();
 		/** @var MobileContext $context */
 		$context = $services->getService( 'MobileFrontend.Context' );
 		$title = $out->getTitle();
 		$config = $services->getService( 'MobileFrontend.Config' );
-
 		$displayMobileView = $context->shouldDisplayMobileView();
-		// T204691
-		$theme = $config->get( 'MFManifestThemeColor' );
-		if ( $theme && $displayMobileView ) {
-			$out->addMeta( 'theme-color', $theme );
-		}
 
 		if ( !$title ) {
 			return;
@@ -313,11 +308,6 @@ class MobileFrontendHooks {
 			$text = ExtMobileFrontend::domParseWithContentProvider(
 				$provider, $out, $runMobileFormatter
 			);
-			// Assume we don't need while-JS-is-loading toggle support if we are using the API
-			if ( !$isParse ) {
-				$nonce = $out->getCSP()->getNonce();
-				$text = MakeSectionsTransform::interimTogglingSupport( $nonce ) . $text;
-			}
 		}
 	}
 
@@ -434,9 +424,10 @@ class MobileFrontendHooks {
 	public static function onResourceLoaderSiteStylesModulePages( $skin, &$pages ) {
 		$ctx = MobileContext::singleton();
 		$ucaseSkin = ucfirst( $skin );
-		if ( $ctx->shouldDisplayMobileView() ) {
-			$services = MediaWikiServices::getInstance();
-			$config = $services->getService( 'MobileFrontend.Config' );
+		$services = MediaWikiServices::getInstance();
+		$config = $services->getService( 'MobileFrontend.Config' );
+		// See https://phabricator.wikimedia.org/T270603#6721274
+		if ( $ctx->shouldDisplayMobileView() && $config->get('MFCustomSiteModules') ) {
 			unset( $pages['MediaWiki:Common.css'] );
 			unset( $pages['MediaWiki:Print.css'] );
 			// MediaWiki:<skinname>.css suffers from the same problems as MediaWiki:Common.css
@@ -461,7 +452,8 @@ class MobileFrontendHooks {
 		$ctx = MobileContext::singleton();
 		$services = MediaWikiServices::getInstance();
 		$config = $services->getService( 'MobileFrontend.Config' );
-		if ( $ctx->shouldDisplayMobileView() ) {
+		// See https://phabricator.wikimedia.org/T270603#6721274
+		if ( $ctx->shouldDisplayMobileView() && $config->get('MFCustomSiteModules') ) {
 			unset( $pages['MediaWiki:Common.js'] );
 			$pages['MediaWiki:Mobile.js'] = [ 'type' => 'script' ];
 			if ( !$config->get( 'MFSiteStylesRenderBlocking' ) ) {
@@ -478,6 +470,7 @@ class MobileFrontendHooks {
 	 * @param array &$cookies array of cookies name, add a value to it
 	 *                        if you want to add a cookie that have to vary cache options
 	 */
+	/* WGL - Keep MobileFrontend from varying on cookies as it conflicts with our own caching logic and causes unneeded cache disabling.
 	public static function onGetCacheVaryCookies( $out, &$cookies ) {
 		$context = MediaWikiServices::getInstance()->getService( 'MobileFrontend.Context' );
 		$mobileUrlTemplate = $context->getMobileUrlTemplate();
@@ -492,7 +485,7 @@ class MobileFrontendHooks {
 			$cookies[] = MobileContext::OPTIN_COOKIE_NAME;
 		}
 	}
-
+	*/
 	/**
 	 * Varies the parser cache if responsive images should have their variants
 	 * stripped from the parser output, since the transformation happens during
@@ -804,6 +797,7 @@ class MobileFrontendHooks {
 		$mfNoIndexPages = $config->get( 'MFNoindexPages' );
 		$isCanonicalLinkHandledByCore = $config->get( 'EnableCanonicalServerLink' );
 		$mfMobileUrlTemplate = $context->getMobileUrlTemplate();
+		$displayMobileView = $context->shouldDisplayMobileView();
 
 		$title = $skin->getTitle();
 
@@ -812,7 +806,7 @@ class MobileFrontendHooks {
 		if ( $mfMobileUrlTemplate && $mfNoIndexPages ) {
 			$link = false;
 
-			if ( !$context->shouldDisplayMobileView() ) {
+			if ( !$displayMobileView ) {
 				// add alternate link to desktop sites - bug T91183
 				$desktopUrl = $title->getFullURL();
 				$link = [
@@ -844,7 +838,7 @@ class MobileFrontendHooks {
 		}
 
 		// Set X-Analytics HTTP response header if necessary
-		if ( $context->shouldDisplayMobileView() ) {
+		if ( $displayMobileView ) {
 			$analyticsHeader = ( $mfEnableXAnalyticsLogging ? $context->getXAnalyticsHeader() : false );
 			if ( $analyticsHeader ) {
 				$resp = $out->getRequest()->response();
@@ -875,6 +869,18 @@ class MobileFrontendHooks {
 			// Allow modifications in mobile only mode
 			$hookContainer = $services->getHookContainer();
 			$hookContainer->run( 'BeforePageDisplayMobile', [ &$out, &$skin ] );
+		}
+
+		// T204691
+		$theme = $config->get( 'MFManifestThemeColor' );
+		if ( $theme && $displayMobileView ) {
+			$out->addMeta( 'theme-color', $theme );
+		}
+
+		if ( $displayMobileView ) {
+			// Adds inline script to allow opening of sections while JS is still loading
+			$nonce = $out->getCSP()->getNonce();
+			$out->prependHTML( MakeSectionsTransform::interimTogglingSupport( $nonce ) );
 		}
 	}
 

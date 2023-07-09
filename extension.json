@@ -33,6 +33,7 @@
 		"History": {
 			"class": "SpecialMobileHistory",
 			"services": [
+				"DBLoadBalancer",
 				"NamespaceInfo",
 				"RevisionFactory"
 			]
@@ -513,20 +514,6 @@
 				"mobile-frontend-languages-structured-overlay-no-results-body"
 			]
 		},
-		"mobile.site": {
-			"dependencies": [
-				"site"
-			],
-			"targets": "mobile",
-			"deprecated": "Please do not add this module to the page."
-		},
-		"mobile.site.styles": {
-			"dependencies": [
-				"site.styles"
-			],
-			"targets": "mobile",
-			"deprecated": "Please do not add this module to the page."
-		},
 		"mobile.special.styles": {
 			"targets": "mobile",
 			"styles": [
@@ -686,7 +673,6 @@
 		"SkinAddFooterLinks": "MobileFrontendHooks::onSkinAddFooterLinks",
 		"BeforePageRedirect": "MobileFrontendHooks::onBeforePageRedirect",
 		"DifferenceEngineViewHeader": "MobileFrontendHooks::onDifferenceEngineViewHeader",
-		"GetCacheVaryCookies": "MobileFrontendHooks::onGetCacheVaryCookies",
 		"SpecialPage_initList": "MobileFrontendHooks::onSpecialPageInitList",
 		"ListDefinedTags": [
 			"MobileFrontendHooks::onListDefinedTags",
@@ -734,6 +720,9 @@
 		]
 	},
 	"config": {
+		"MFCustomSiteModules": {
+			"value": false
+		},
 		"MFEnableFontChanger": {
 			"value": {
 				"base": true,
