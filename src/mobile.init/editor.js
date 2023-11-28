@@ -444,7 +444,9 @@ function setupEditor( page, skin, currentPageHTMLParser, router ) {
 			url.searchParams.delete( 'section' );
 			history.replaceState( null, document.title, url );
 		}
-		router.navigate( fragment );
+		util.docReady( function () {
+			router.navigate( fragment );
+		} );
 	}
 }
 
