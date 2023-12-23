@@ -11,16 +11,20 @@ var util = require( '../mobile.startup/util' ),
  * @param {string} options.title the title to edit
  * @param {string|null} options.sectionId the id of the section to operate edits on.
  * @param {number} [options.oldId] revision to operate on. If absent defaults to latest.
- * @param {boolean} [options.isNewPage] whether the page being created is new
  * @param {boolean} [options.fromModified] whether the page was loaded in a modified state
+ * @param {string} [options.preload] the name of a page to preload into the editor
+ * @param {Array} [options.preloadparams] parameters to prefill into the preload content
+ * @param {string} [options.editintro] edit intro to add to notices
  */
 function EditorGateway( options ) {
 	this.api = options.api;
 	this.title = options.title;
 	this.sectionId = options.sectionId;
 	this.oldId = options.oldId;
-	// return an empty section for new pages
-	this.content = options.isNewPage ? '' : undefined;
+	this.preload = options.preload;
+	this.preloadparams = options.preloadparams;
+	this.editintro = options.editintro;
+	this.content = undefined;
 	this.fromModified = options.fromModified;
 	this.hasChanged = options.fromModified;
 }
@@ -70,7 +74,8 @@ EditorGateway.prototype = {
 		function resolve() {
 			return util.Deferred().resolve( {
 				text: self.content || '',
-				blockinfo: self.blockinfo
+				blockinfo: self.blockinfo,
+				notices: self.notices
 			} );
 		}
 
@@ -80,9 +85,15 @@ EditorGateway.prototype = {
 			options = actionParams( {
 				prop: [ 'revisions', 'info' ],
 				rvprop: [ 'content', 'timestamp' ],
+				inprop: [ 'preloadcontent', 'editintro' ],
+				inpreloadcustom: self.preload,
+				inpreloadparams: self.preloadparams,
+				ineditintrocustom: self.editintro,
 				titles: self.title,
 				// get block information for this user
 				intestactions: 'edit',
+				// …and test whether this edit will auto-create an account
+				intestactionsautocreate: true,
 				intestactionsdetail: 'full'
 			} );
 			// Load text of old revision if desired
@@ -94,18 +105,21 @@ EditorGateway.prototype = {
 				options.rvsection = this.sectionId;
 			}
 			return this.api.get( options ).then( function ( resp ) {
-				var revision, pageObj;
-
 				if ( resp.error ) {
 					return util.Deferred().reject( resp.error.code );
 				}
 
-				pageObj = resp.query.pages[0];
+				var pageObj = resp.query.pages[0];
 				// page might not exist and caller might not have known.
 				if ( pageObj.missing !== undefined ) {
-					self.content = '';
+					if ( pageObj.preloadcontent ) {
+						self.content = pageObj.preloadcontent.content;
+						self.hasChanged = !pageObj.preloadisdefault;
+					} else {
+						self.content = '';
+					}
 				} else {
-					revision = pageObj.revisions[0];
+					var revision = pageObj.revisions[0];
 					self.content = revision.content;
 					self.timestamp = revision.timestamp;
 				}
@@ -113,6 +127,8 @@ EditorGateway.prototype = {
 				// save content a second time to be able to check for changes
 				self.originalContent = self.content;
 				self.blockinfo = self.getBlockInfo( pageObj );
+				self.wouldautocreate = pageObj.wouldautocreate && pageObj.wouldautocreate.edit;
+				self.notices = pageObj.editintro;
 
 				return resolve();
 			} );
@@ -134,19 +150,6 @@ EditorGateway.prototype = {
 			this.hasChanged = false;
 		}
 		this.content = content;
-	},
-
-	/**
-	 * Mark content as modified and set text that should be prepended to given
-	 * section when #save is invoked.
-	 *
-	 * @memberof EditorGateway
-	 * @instance
-	 * @param {string} text Text to be prepended.
-	 */
-	setPrependText: function ( text ) {
-		this.prependtext = text;
-		this.hasChanged = true;
 	},
 
 	/**
@@ -192,18 +195,22 @@ EditorGateway.prototype = {
 
 			if ( self.content !== undefined ) {
 				apiOptions.text = self.content;
-			} else if ( self.prependtext ) {
-				apiOptions.prependtext = self.prependtext;
 			}
 
 			if ( self.sectionId ) {
 				apiOptions.section = self.sectionId;
 			}
 
+			// TODO: When `wouldautocreate` is true, we should also set up:
+			// - apiOptions.returntofragment to be the URL fragment to link to the section
+			//   (but we don't know what it is; `sectionId` here is the number)
+			// - apiOptions.returntoquery to be 'redirect=no' if we're saving a redirect
+			//   (but we have can't figure that out, unless we parse the wikitext)
+
 			self.api.postWithToken( 'csrf', apiOptions ).then( function ( data ) {
 				if ( data && data.edit && data.edit.result === 'Success' ) {
 					self.hasChanged = false;
-					result.resolve( data.edit.newrevid );
+					result.resolve( data.edit.newrevid, data.edit.tempusercreatedredirect, data.edit.tempusercreated );
 				} else {
 					result.reject( data );
 				}
@@ -259,9 +266,14 @@ EditorGateway.prototype = {
 		} );
 
 		this.abortPreview();
-		this._pending = this.api.post( options );
+		// Acquire a temporary user username before previewing, so that signatures and
+		// user-related magic words display the temp user instead of IP user in the preview. (T331397)
+		var promise = mw.user.acquireTempUserName().then( function () {
+			self._pending = self.api.post( options );
+			return self._pending;
+		} );
 
-		return this._pending.then( function ( resp ) {
+		return promise.then( function ( resp ) {
 			if ( resp && resp.parse && resp.parse.text ) {
 				// When editing section 0 or the whole page, there is no section name, so skip
 				if ( self.sectionId && self.sectionId !== '0' &&

@@ -2,6 +2,8 @@
 
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\RevisionStore;
+use MediaWiki\User\UserIdentity;
+use MediaWiki\User\UserIdentityValue;
 use MobileFrontend\Models\MobilePage;
 
 /**
@@ -54,33 +56,22 @@ class MobilePageTest extends MediaWikiIntegrationTestCase {
 	/**
 	 * Mock the RevisionStore class
 	 * @param Title $title
-	 * @param TestUser|null $testUser
+	 * @param UserIdentity|null $user
 	 * @return RevisionStore
 	 */
-	private function mockRevisionStore( Title $title, TestUser $testUser = null ) {
-		// Create a mock of the RevisionRecord class.
-		$revisionRecordMock = $this->getMockForAbstractClass(
-			RevisionRecord::class,
-			[],
-			'',
-			false,
-			false,
-			false,
-			[ 'getTimestamp', 'getUser' ]
-		);
+	private function mockRevisionStore( Title $title, UserIdentity $user = null ) {
+		$revisionRecordMock = $this->createMock( RevisionRecord::class );
 
-		$revisionRecordMock->expects( $this->any() )
-			->method( 'getTimestamp' )
+		$revisionRecordMock->method( 'getTimestamp' )
 			->willReturn( self::TS_MW );
 
-		if ( $testUser ) {
-			$userId = $testUser->getUser()->getId();
-			$userName = $testUser->getUser()->getName();
+		if ( $user ) {
+			$userId = $user->getId();
+			$userName = $user->getName();
 
 			$userIdentity = $this->createMock( \MediaWiki\User\UserIdentity::class );
 
-			$userIdentity->expects( $this->any() )
-				->method( 'getId' )
+			$userIdentity->method( 'getId' )
 				->willReturn( $userId );
 
 			$userIdentity->expects( $this->any() )
@@ -193,8 +184,8 @@ class MobilePageTest extends MediaWikiIntegrationTestCase {
 	 */
 	public function testGetLatestEdit() {
 		$title = $this->createTestTitle();
-		$testUser = self::getTestUser();
-		$revMock = $this->mockRevisionStore( $title, $testUser );
+		$user = new UserIdentityValue( 42, 'foo' );
+		$revMock = $this->mockRevisionStore( $title, $user );
 
 		$mobilePage = new MobilePage( $title, false );
 		$this->setService( 'RevisionStore', $revMock );
@@ -205,7 +196,7 @@ class MobilePageTest extends MediaWikiIntegrationTestCase {
 		$this->assertArrayHasKey( 'name', $actual );
 		$this->assertArrayHasKey( 'gender', $actual );
 		$this->assertSame( self::TS_MW_TO_TS_UNIX, $actual['timestamp'] );
-		$this->assertSame( $testUser->getUser()->getName(), $actual['name'] );
+		$this->assertSame( $user->getName(), $actual['name'] );
 		$this->assertSame( 'unknown', $actual['gender'] );
 	}
 
@@ -291,6 +282,7 @@ class MobilePageTest extends MediaWikiIntegrationTestCase {
 		);
 
 		$actual = $mPageWithFile->getSmallThumbnailHtml( $useBackgroundImage );
+		$actual = str_replace( '/>', '>', $actual );
 
 		$this->assertSame( $expected, $actual );
 	}
@@ -308,6 +300,7 @@ class MobilePageTest extends MediaWikiIntegrationTestCase {
 			$this->createTestTitle(), $fileWidthGreatThanHeight
 		);
 		$actual = $mPageWithFile->getSmallThumbnailHtml( $useBackgroundImage );
+		$actual = str_replace( '/>', '>', $actual );
 
 		$this->assertSame( $expected, $actual );
 	}
@@ -352,7 +345,7 @@ class MobilePageTest extends MediaWikiIntegrationTestCase {
 	 *
 	 * @return array
 	 */
-	public function getPlaceHolderThumbnailHtmlDataProvider() {
+	public static function getPlaceHolderThumbnailHtmlDataProvider() {
 		return [
 			[
 				'', '',
@@ -378,7 +371,7 @@ class MobilePageTest extends MediaWikiIntegrationTestCase {
 	 *
 	 * @return array
 	 */
-	public function getSmallThumbnailHtmlWithNoFileDataProvider() {
+	public static function getSmallThumbnailHtmlWithNoFileDataProvider() {
 		return [
 			[ false, '' ],
 			[ true, '' ]
@@ -390,7 +383,7 @@ class MobilePageTest extends MediaWikiIntegrationTestCase {
 	 *
 	 * @return array
 	 */
-	public function getSmallThumbnailHtmlWithNoThumbDataProvider() {
+	public static function getSmallThumbnailHtmlWithNoThumbDataProvider() {
 		return [
 			[ false, '' ],
 			[ true, '' ]
@@ -402,12 +395,12 @@ class MobilePageTest extends MediaWikiIntegrationTestCase {
 	 *
 	 * @return array
 	 */
-	public function getSmallThumbnailHtmlWidthLessThanHeightDataProvider() {
+	public static function getSmallThumbnailHtmlWidthLessThanHeightDataProvider() {
 		return [
 			// With width < height
 			[
 				false,
-				'<img class="list-thumb list-thumb-x" src="https://commons.wikimedia.org/wiki/File:Image.jpg"/>'
+				'<img class="list-thumb list-thumb-x" src="https://commons.wikimedia.org/wiki/File:Image.jpg">'
 			],
 			[
 				true,
@@ -422,12 +415,12 @@ class MobilePageTest extends MediaWikiIntegrationTestCase {
 	 *
 	 * @return array
 	 */
-	public function getSmallThumbnailHtmlWidthGreaterThanHeightDataProvider() {
+	public static function getSmallThumbnailHtmlWidthGreaterThanHeightDataProvider() {
 		return [
 			// With width > height
 			[
 				false,
-				'<img class="list-thumb list-thumb-y" src="https://commons.wikimedia.org/wiki/File:Image.jpg"/>'
+				'<img class="list-thumb list-thumb-y" src="https://commons.wikimedia.org/wiki/File:Image.jpg">'
 			],
 			[
 				true,

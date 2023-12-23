@@ -4,6 +4,8 @@ use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
+use MediaWiki\User\UserIdentity;
+use MobileFrontend\Hooks\HookRunner;
 
 /**
  * Show the difference between two revisions of a page
@@ -46,8 +48,8 @@ class SpecialMobileDiff extends MobileSpecialPage {
 	/**
 	 * Takes 2 ids/keywords and validates them returning respective revisions
 	 *
-	 * @param int[] $revids Array of revision ids currently limited to 2 elements
-	 * @return RevisionRecord[]|null[] Array of previous and next revision. The next revision is
+	 * @param string[] $revids Array of revision ids currently limited to 2 elements
+	 * @return (RevisionRecord|null)[] Array of previous and next revision. The next revision is
 	 *   null if a bad parameter is passed
 	 */
 	private function getRevisionsToCompare( $revids ) {
@@ -95,8 +97,7 @@ class SpecialMobileDiff extends MobileSpecialPage {
 		$output = $this->getOutput();
 
 		// @FIXME add full support for git-style notation (eg ...123, 123...)
-		// @phan-suppress-next-line PhanTypeMismatchArgument
-		$revisions = $this->getRevisionsToCompare( explode( '...', $par, 2 ) );
+		$revisions = $this->getRevisionsToCompare( explode( '...', $par ?? '', 2 ) );
 		list( $prev, $rev ) = $revisions;
 
 		if ( $rev === null ) {
@@ -132,10 +133,9 @@ class SpecialMobileDiff extends MobileSpecialPage {
 		// Allow other extensions to load more stuff here
 		// Now provides RevisionRecord objects, breaking change,
 		// Thanks extension must be updated first
-		$hookContainer = MediaWikiServices::getInstance()->getHookContainer();
-		$hookContainer->run(
-			'BeforeSpecialMobileDiffDisplay',
-			[ &$output, $this->mobileContext, $revisions ]
+		$hookRunner = new HookRunner( MediaWikiServices::getInstance()->getHookContainer() );
+		$hookRunner->onBeforeSpecialMobileDiffDisplay(
+			$output, $this->mobileContext, $revisions
 		);
 
 		$output->addHTML( '<div id="mw-mf-diffview" class="content-unstyled"><div id="mw-mf-diffarea">' );
@@ -230,7 +230,8 @@ class SpecialMobileDiff extends MobileSpecialPage {
 		if ( $this->rev->isDeleted( RevisionRecord::DELETED_COMMENT ) && !$unhide ) {
 			$commentHtml = $this->msg( 'rev-deleted-comment' )->escaped();
 		} elseif ( $comment !== '' && $comment !== null ) {
-			$commentHtml = Linker::formatComment( $comment, $this->targetTitle );
+			$commentHtml = MediaWikiServices::getInstance()->getCommentFormatter()
+				->format( $comment, $this->targetTitle );
 		} else {
 			$commentHtml = $this->msg( 'mobile-frontend-changeslist-nocomment' )->escaped();
 		}
@@ -243,7 +244,6 @@ class SpecialMobileDiff extends MobileSpecialPage {
 	}
 
 	/**
-	 * Get the intro HTML
 	 * @return string Built HTML for intro section
 	 */
 	private function getIntroHTML() {
@@ -253,22 +253,27 @@ class SpecialMobileDiff extends MobileSpecialPage {
 			$bytesChanged = $this->rev->getSize();
 		}
 		$icon = 'upTriangle';
-		$bytesClassNames = 'meta mw-ui-icon-small ';
+		$bytesClassNames = 'meta mw-mf-diff-small-icon ';
 
+		$sizeIcon = '';
 		if ( $bytesChanged > 0 ) {
 			$changeMsg = 'mobile-frontend-diffview-bytesadded';
-			$sizeClass = MobileUI::iconClass( $icon . '-constructive', 'before',
-				$bytesClassNames . 'mw-mf-bytesadded' );
+			$sizeIcon = MobileUI::icon( $icon . '-constructive' );
+			$sizeClass = $bytesClassNames . 'mw-mf-bytesadded';
 		} elseif ( $bytesChanged === 0 ) {
 			$changeMsg = 'mobile-frontend-diffview-bytesnochange';
-			$sizeClass = MobileUI::iconClass( $icon, 'before',
-				$bytesClassNames . 'mw-mf-bytesneutral mf-mw-ui-icon-rotate-clockwise' );
+			$sizeIcon = MobileUI::icon( $icon );
+			$sizeClass = $bytesClassNames . 'mw-mf-bytesneutral mf-mw-ui-icon-rotate-clockwise';
 		} else {
 			$changeMsg = 'mobile-frontend-diffview-bytesremoved';
-			$sizeClass = MobileUI::iconClass( $icon . '-destructive', 'before',
-				$bytesClassNames . 'mw-mf-bytesremoved mf-mw-ui-icon-rotate-flip' );
+			$sizeIcon = MobileUI::icon( $icon . '-destructive' );
+			$sizeClass = $bytesClassNames . 'mw-mf-bytesremoved mf-mw-ui-icon-rotate-flip';
 			$bytesChanged = abs( $bytesChanged );
 		}
+
+		// Add whitespace between icon and label.
+		$sizeIcon .= ' ';
+
 		$ts = new MWTimestamp( $this->rev->getTimestamp() );
 		$user = $this->getUser();
 		$actionMessageKey = MediaWikiServices::getInstance()->getPermissionManager()
@@ -287,6 +292,7 @@ class SpecialMobileDiff extends MobileSpecialPage {
 			"actionLinkUrl" => $this->targetTitle->getLocalURL( [ 'action' => 'edit' ] ),
 			"actionLinkLabel" => $this->msg( $actionMessageKey )->text(),
 			"sizeClass" => $sizeClass,
+			'html-size-icon' => $sizeIcon,
 			"bytesChanged" => $this->msg( $changeMsg )->numParams( $bytesChanged )->text(),
 			"separator" => $this->msg( 'comma-separator' )->text(),
 			"bytesChangedTimeDate" => $this->getLanguage()->getHumanTimestamp( $ts ),
@@ -347,12 +353,11 @@ class SpecialMobileDiff extends MobileSpecialPage {
 		$ipAddr = $user ? $user->getName() : '';
 
 		// Note $userId will be 0 and $ipAddr an empty string if the current audience cannot see it.
-		if ( $userId ) {
-			// @phan-suppress-next-line PhanTypeMismatchArgumentNullable
+		if ( $user && $userId ) {
 			$user = $this->getUserFactory()->newFromUserIdentity( $user );
 			$edits = $user->getEditCount();
 			$attrs = [
-				'class' => MobileUI::iconClass( 'userAvatar-base20', 'before', 'mw-mf-user' ),
+				'class' => 'mw-mf-user',
 				'data-revision-id' => $this->revId,
 				'data-user-name' => $user->getName(),
 				'data-user-gender' => $this->getUserOptionsLookup()->getOption( $user, 'gender' ),
@@ -361,6 +366,9 @@ class SpecialMobileDiff extends MobileSpecialPage {
 			// a broken link if the user page does not exist
 			$output->addHTML(
 				Html::openElement( 'div', $attrs ) .
+				 MobileUI::icon( $user->isNamed() ? 'userAvatar' : 'userTemporary' ) .
+				// Add whitespace between icon and label.
+				' ' .
 				$this->getLinkRenderer()->makeLink(
 					$user->getUserPage(),
 					$user->getName(),
@@ -383,9 +391,9 @@ class SpecialMobileDiff extends MobileSpecialPage {
 		} elseif ( $ipAddr ) {
 			$userPage = SpecialPage::getTitleFor( 'Contributions', $ipAddr );
 			$output->addHTML(
-				Html::element( 'div', [
-					'class' => MobileUI::iconClass( 'userAnonymous-base20', 'before', 'mw-mf-user mw-mf-anon' ),
-				], $this->msg( 'mobile-frontend-diffview-anonymous' )->text() ) .
+				Html::rawElement( 'div', [
+					'class' => 'mw-mf-user mw-mf-anon',
+				], MobileUI::icon( 'userAnonymous' ) . $this->msg( 'mobile-frontend-diffview-anonymous' )->escaped() ) .
 				'<div>' .
 					$this->getLinkRenderer()->makeLink( $userPage, $ipAddr ) .
 				'</div>'
@@ -405,16 +413,16 @@ class SpecialMobileDiff extends MobileSpecialPage {
 
 	/**
 	 * Get the list of groups of user
-	 * @param User $user The user object to get the list from
+	 * @param UserIdentity $user The user object to get the list from
 	 * @param IContextSource $context
 	 * @return string comma separated list of user groups
 	 */
-	private function listGroups( User $user, IContextSource $context ) {
+	private function listGroups( UserIdentity $user, IContextSource $context ) {
 		// Get groups to which the user belongs
 		$userGroups = $this->getUserGroupManager()->getUserGroups( $user );
 		$userMembers = [];
 		foreach ( $userGroups as $group ) {
-			$userMembers[] = UserGroupMembership::getLink( $group, $context, 'html' );
+			$userMembers[] = UserGroupMembership::getLinkHTML( $group, $context );
 		}
 
 		return $this->getLanguage()->commaList( $userMembers );
@@ -475,9 +483,12 @@ class SpecialMobileDiff extends MobileSpecialPage {
 	/**
 	 * Get the URL for Desktop version of difference view
 	 * @param string|null $subPage URL of mobile diff page
-	 * @return string Url to mobile diff page
+	 * @return string|null Url to mobile diff page
 	 */
 	public function getDesktopUrl( $subPage ) {
+		if ( $subPage === null ) {
+			return null;
+		}
 		$parts = explode( '...', $subPage );
 		if ( count( $parts ) > 1 ) {
 			$params = [ 'diff' => $parts[1], 'oldid' => $parts[0] ];

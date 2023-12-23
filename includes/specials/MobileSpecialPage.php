@@ -5,6 +5,7 @@ use MediaWiki\MediaWikiServices;
 use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserGroupManager;
 use MediaWiki\User\UserOptionsLookup;
+use MobileFrontend\Hooks\HookRunner;
 
 /**
  * Basic mobile implementation of SpecialPage to use in specific mobile special pages
@@ -98,12 +99,25 @@ class MobileSpecialPage extends SpecialPage {
 		$rl = $out->getResourceLoader();
 		$name = $this->getName();
 		$id = strtolower( $name );
-		// FIXME: These names should be more specific
+		// FIXME: These modules should not exist in MobileFrontend, please see:
+		// 	* T305113: [EPIC] Remove mobile history page
+		//  * T117279: [EPIC] Core should provide inline diffs as well as side by side
+		//    (Move InlineDifferenceEngine into core / remove MobileDiff)
+		//  * T109277: [EPIC]: Use core watchlist code for mobile experience
+		//  * T91201 [EPIC] Accessibility settings/preferences
+		// Possible values:
+		// * mobile.special.mobilediff.styles
+		// * mobile.special.watchlist.scripts
+		// * mobile.special.watchlist.styles
+		// * mobile.special.mobileoptions.styles
+		// * mobile.special.mobileoptions.scripts
+		// * mobile.special.history.styles
 		$specialStyleModuleName = 'mobile.special.' . $id . '.styles';
 		$specialScriptModuleName = 'mobile.special.' . $id . '.scripts';
 
 		if ( $rl->isModuleRegistered( $specialStyleModuleName ) ) {
 			$out->addModuleStyles( [
+				// FIXME: mobile.special.styles should be replaced with mediawiki.special module
 				'mobile.special.styles',
 				$specialStyleModuleName
 			] );
@@ -112,8 +126,8 @@ class MobileSpecialPage extends SpecialPage {
 		if ( $rl->isModuleRegistered( $specialScriptModuleName ) ) {
 			$out->addModules( $specialScriptModuleName );
 		}
-		$hookContainer = MediaWikiServices::getInstance()->getHookContainer();
-		$hookContainer->run( 'MobileSpecialPageStyles', [ $id, $out ] );
+		$hookRunner = new HookRunner( MediaWikiServices::getInstance()->getHookContainer() );
+		$hookRunner->onMobileSpecialPageStyles( $id, $out );
 	}
 
 	/**

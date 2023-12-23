@@ -1,3 +1,4 @@
+@import 'mediawiki.skin.variables.less';
 @import '../../mobile.less/mobile.variables.less';
 
 /*
@@ -38,13 +39,13 @@ form.mw-mf-settings {
 	}
 
 	.oo-ui-fieldLayout {
-		border-bottom: solid 1px @colorGray14;
+		border-bottom: @border-width-base @border-style-base #eaecf0;
 		padding-top: 12.5px;
 		padding-bottom: 12.5px;
 		margin-top: 0;
 
 		&:first-child {
-			border-top: solid 1px @colorGray14;
+			border-top: @border-width-base @border-style-base #eaecf0;
 		}
 	}
 
@@ -52,7 +53,7 @@ form.mw-mf-settings {
 		margin-top: 10px !important;
 	}
 
-	#amc-field {
+	#amc-field, #mobile-user-pref {
 		.hlist {
 			padding-top: 0.4em;
 
@@ -71,20 +72,20 @@ form.mw-mf-settings {
 		border-top: 0;
 		padding-top: 0;
 
-		&:before {
+		&::before {
 			content: '';
 			width: 100%;
 			height: 10%;
-			background: @colorGray14;
+			background: #eaecf0;
 			padding-top: 20px;
 			margin-bottom: 10px;
 			display: block;
 		}
 
 		&:first-child {
-			border-top: solid 1px @colorGray14;
+			border-top: @border-width-base @border-style-base #eaecf0;
 
-			&:before {
+			&::before {
 				background: none;
 			}
 		}
@@ -105,13 +106,13 @@ form.mw-mf-settings {
 		align-items: center;
 
 		// make parent expand to include floats
-		&:before,
-		&:after {
+		&::before,
+		&::after {
 			content: '';
 			display: table;
 		}
 
-		&:after {
+		&::after {
 			clear: both;
 		}
 	}

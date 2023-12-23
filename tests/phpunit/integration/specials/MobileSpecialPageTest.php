@@ -1,15 +1,18 @@
 <?php
 
+use MediaWiki\MainConfigNames;
+use MediaWiki\Request\FauxRequest;
+
 /**
  * @group MobileFrontend
  */
 class MobileSpecialPageTest extends MediaWikiIntegrationTestCase {
 	protected function setUp(): void {
 		parent::setUp();
-		$this->setMwGlobals( 'wgScript', '/wiki/index.php' );
+		$this->overrideConfigValue( MainConfigNames::Script, '/wiki/index.php' );
 	}
 
-	public function provideGetDesktopUrlForMobileHistory() {
+	public static function provideGetDesktopUrlForMobileHistory() {
 		return [
 			[
 				'SpecialMobileHistory',
@@ -53,7 +56,7 @@ class MobileSpecialPageTest extends MediaWikiIntegrationTestCase {
 		$this->assertEquals( $expected, $page->getDesktopUrl( $subPage ) );
 	}
 
-	public function provideGetDesktopUrlForMobileDiff() {
+	public static function provideGetDesktopUrlForMobileDiff() {
 		return [
 			[
 				'SpecialMobileDiff',

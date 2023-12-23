@@ -1,6 +1,5 @@
 import { action } from '@storybook/addon-actions';
-import Icon from '../src/mobile.startup/Icon';
-import '../.storybook/icons.less';
+import IconButton from '../src/mobile.startup/IconButton';
 import '../resources/mobile.startup/icon.less';
 
 export default {
@@ -10,16 +9,16 @@ export default {
 export const ArrowsSmallNormal = () => {
 	const container = document.createElement( 'div' );
 	[
-		new Icon( {
-			name: 'expand',
+		new IconButton( {
+			icon: 'expand',
 			isSmall: true,
 			label: 'Arrow small',
 			events: {
 				click: action( 'click' )
 			}
 		} ),
-		new Icon( {
-			name: 'expand',
+		new IconButton( {
+			icon: 'expand',
 			label: 'Arrow',
 			events: {
 				click: action( 'click' )
@@ -36,8 +35,8 @@ ArrowsSmallNormal.story = {
 export const ArrowRotated180Degrees = () => {
 	const container = document.createElement( 'div' );
 	[
-		new Icon( {
-			name: 'expand',
+		new IconButton( {
+			icon: 'expand',
 			isSmall: true,
 			rotation: 180,
 			label: 'Arrow',
@@ -45,16 +44,16 @@ export const ArrowRotated180Degrees = () => {
 				click: action( 'click' )
 			}
 		} ),
-		new Icon( {
-			name: 'expand',
+		new IconButton( {
+			icon: 'expand',
 			rotation: 180,
 			label: 'Arrow',
 			events: {
 				click: action( 'click' )
 			}
 		} ),
-		new Icon( {
-			name: 'expand',
+		new IconButton( {
+			icon: 'expand',
 			isSmall: true,
 			rotation: 180,
 			label: 'Arrow small',
@@ -63,8 +62,8 @@ export const ArrowRotated180Degrees = () => {
 				click: action( 'click' )
 			}
 		} ),
-		new Icon( {
-			name: 'expand',
+		new IconButton( {
+			icon: 'expand',
 			rotation: 180,
 			label: 'Arrow',
 			hasText: true,
@@ -83,8 +82,8 @@ ArrowRotated180Degrees.story = {
 export const ArrowWithLabel = () => {
 	const container = document.createElement( 'div' );
 	[
-		new Icon( {
-			name: 'expand',
+		new IconButton( {
+			icon: 'expand',
 			isSmall: true,
 			label: 'Arrow small',
 			hasText: true,
@@ -92,8 +91,8 @@ export const ArrowWithLabel = () => {
 				click: action( 'click' )
 			}
 		} ),
-		new Icon( {
-			name: 'expand',
+		new IconButton( {
+			icon: 'expand',
 			label: 'Arrow',
 			hasText: true,
 			events: {

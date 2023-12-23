@@ -1,11 +1,13 @@
 <?php
 
 use MediaWiki\MediaWikiServices;
+use MobileFrontend\Hooks\HookRunner;
 use MobileFrontend\Models\MobileCollection;
 use MobileFrontend\Models\MobilePage;
 
 /**
  * The mobile version of the watchlist editing page.
+ * @deprecated in future this should be the core SpecialEditWatchlist page (T109277)
  */
 class SpecialMobileEditWatchlist extends SpecialEditWatchlist {
 	/** @var string The name of the title to begin listing the watchlist from */
@@ -23,8 +25,6 @@ class SpecialMobileEditWatchlist extends SpecialEditWatchlist {
 	 */
 	protected function outputSubtitle() {
 		$user = $this->getUser();
-		// Make sure a header is rendered with a-z focused (as we know we're on that page)
-		$this->getOutput()->addHTML( SpecialMobileWatchlist::getWatchlistHeader( $user, 'a-z' ) );
 	}
 
 	/**
@@ -180,10 +180,10 @@ class SpecialMobileEditWatchlist extends SpecialEditWatchlist {
 		// Begin rendering of watchlist.
 		$watchlist = [ $ns => $allPages ];
 		$services = MediaWikiServices::getInstance();
-		$services->getHookContainer()->run(
-			'SpecialMobileEditWatchlist::images',
-			[ $this->getContext(), &$watchlist, &$images ]
-		);
+		( new HookRunner( $services->getHookContainer() ) )
+			->onSpecialMobileEditWatchlist__images(
+				$this->getContext(), $watchlist, $images
+			);
 
 		// create list of pages
 		$mobilePages = new MobileCollection();
@@ -211,7 +211,7 @@ class SpecialMobileEditWatchlist extends SpecialEditWatchlist {
 			$qs = [ 'from' => $from ];
 			$html .= Html::element( 'a',
 				[
-					'class' => MobileUI::anchorClass( 'progressive', 'mw-mf-watchlist-more' ),
+					'class' => 'mw-mf-watchlist-more',
 					'href' => SpecialPage::getTitleFor( 'EditWatchlist' )->getLocalURL( $qs ),
 				],
 				$this->msg( 'mobile-frontend-watchlist-more' )->text() );
@@ -224,6 +224,10 @@ class SpecialMobileEditWatchlist extends SpecialEditWatchlist {
 				'mobile.pagelist.styles',
 				"mobile.placeholder.images",
 				'mobile.pagesummary.styles',
+				// FIXME: This module should be removed when the following tickets are resolved:
+				// * T305113
+				// * T109277
+				// * T117279
 				'mobile.special.pagefeed.styles'
 			]
 		);
@@ -241,5 +245,12 @@ class SpecialMobileEditWatchlist extends SpecialEditWatchlist {
 		}
 		$html .= Html::closeElement( 'ul' );
 		return $html;
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function getAssociatedNavigationLinks() {
+		return SpecialMobileWatchlist::WATCHLIST_TAB_PATHS;
 	}
 }

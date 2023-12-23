@@ -9,8 +9,7 @@ use Wikimedia\Parsoid\Utils\DOMCompat;
  * @group MobileFrontend
  */
 class MakeSectionsTransformTest extends MediaWikiIntegrationTestCase {
-	private const SECTION_INDICATOR = '<div class="mw-ui-icon mw-ui-icon-element indicator '
-		. 'mw-ui-icon-small mw-ui-icon-flush-left mw-ui-button mw-ui-quiet"></div>';
+	private const SECTION_INDICATOR = '<span class="indicator mf-icon mw-ui-icon-mf-expand mf-icon--small"></span>';
 
 	public static function wrap( $html ) {
 		return "<!DOCTYPE HTML>
@@ -52,32 +51,32 @@ class MakeSectionsTransformTest extends MediaWikiIntegrationTestCase {
 		libxml_clear_errors();
 	}
 
-	public function provideTransform() {
+	public static function provideTransform() {
 		// Test section:
 		// Test common based functionality
 
 		yield [
 			'',
 			true,
-			$this->makeSectionHtml( 0, '', false, false ),
+			self::makeSectionHtml( 0, '', false ),
 			'First section should be added if no content provided'
 		];
 
 		yield [
 			'<div>Body</div><h2>SHeading</h2><div>SBody</div>',
 			true,
-			$this->makeSectionHtml( 0, '<div>Body</div>', false, false )
-			. $this->makeSectionHeading( 'h2', 'SHeading', 1 )
-			. $this->makeSectionHtml( 1, '<div>SBody</div>', false, true ),
+			self::makeSectionHtml( 0, '<div>Body</div>', false )
+			. self::makeSectionHeading( 'h2', 'SHeading', 1 )
+			. self::makeSectionHtml( 1, '<div>SBody</div>', true ),
 			'Process heading, section and section body'
 		];
 
 		yield [
 			'<div>Body</div><h2>SHeading</h2><div>SBody</div>',
 			false,
-			$this->makeSectionHtml( 0, '<div>Body</div>', false, false )
-			. $this->makeSectionHeading( 'h2', 'SHeading', false )
-			. $this->makeSectionHtml( 1, '<div>SBody</div>', false, false ),
+			self::makeSectionHtml( 0, '<div>Body</div>', false )
+			. self::makeSectionHeading( 'h2', 'SHeading', false )
+			. self::makeSectionHtml( 1, '<div>SBody</div>', false ),
 			'No script shouldn`t use collapsible blocks '
 		];
 	}
@@ -90,7 +89,7 @@ class MakeSectionsTransformTest extends MediaWikiIntegrationTestCase {
 	 * @param int|bool $sectionNumber heading corresponds to or false if noscript
 	 * @return string
 	 */
-	private function makeSectionHeading( $heading, $innerHtml, $sectionNumber = 1 ) {
+	private static function makeSectionHeading( $heading, $innerHtml, $sectionNumber = 1 ) {
 		return "<$heading class=\"section-heading\""
 			. ( $sectionNumber === false ? '' : " onclick=\"mfTempOpenSection($sectionNumber)\"" )
 			. ">"
@@ -103,17 +102,14 @@ class MakeSectionsTransformTest extends MediaWikiIntegrationTestCase {
 	 *
 	 * @param string $sectionNumber
 	 * @param string $contentHtml
-	 * @param bool $isReferenceSection whether the section contains references
-	 * @param bool $isCollapsible whether the section contains references
+	 * @param bool $isCollapsible whether the section is collapsible
 	 * @return string
 	 */
-	private function makeSectionHtml(
+	private static function makeSectionHtml(
 		$sectionNumber,
 		$contentHtml,
-		$isReferenceSection,
 		$isCollapsible
 	) {
-		$attrs = $isReferenceSection ? ' data-is-reference-section="1"' : '';
 		$className = "mf-section-$sectionNumber";
 
 		if ( $isCollapsible ) {
@@ -121,15 +117,14 @@ class MakeSectionsTransformTest extends MediaWikiIntegrationTestCase {
 		}
 
 		return "<section class=\"$className\" id=\"mf-section-$sectionNumber\""
-			. "$attrs>$contentHtml</section>";
+			. ">$contentHtml</section>";
 	}
 
 	/**
 	 * @covers ::interimTogglingSupport
 	 */
 	public function testInterimTogglingSupport() {
-		$nonce = RequestContext::getMain()->getOutput()->getCSP()->getNonce();
-		$js = MakeSectionsTransform::interimTogglingSupport( $nonce );
+		$js = MakeSectionsTransform::interimTogglingSupport();
 
 		$this->assertStringContainsString(
 			'function mfTempOpenSection(',

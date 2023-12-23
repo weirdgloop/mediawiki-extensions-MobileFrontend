@@ -2,10 +2,9 @@ var browser = require( './Browser' ).getSingleton(),
 	util = require( './util' ),
 	escapeSelector = util.escapeSelector,
 	arrowOptions = {
-		name: 'expand',
-		type: '',
+		icon: 'expand',
 		isSmall: true,
-		additionalClassNames: 'indicator mw-ui-icon-flush-left'
+		additionalClassNames: 'indicator'
 	},
 	Icon = require( './Icon' );
 
@@ -14,12 +13,14 @@ var browser = require( './Browser' ).getSingleton(),
  * @typedef {Object} ToggledEvent
  * @prop {boolean} expanded True if section is opened, false if closed.
  * @prop {Page} page
- * @prop {boolean} isReferenceSection
  * @prop {jQuery.Object} $heading
  */
 
 /**
  * A class for enabling toggling
+ *
+ * Toggling can be disabled on a sepcific heading by adding the
+ * collapsible-heading-disabled class.
  *
  * @class Toggler
  * @param {Object} options
@@ -27,11 +28,13 @@ var browser = require( './Browser' ).getSingleton(),
  * @param {jQuery.Object} options.$container to apply toggling to
  * @param {string} options.prefix a prefix to use for the id.
  * @param {Page} options.page to allow storage of session for future visits
- * @param {boolean} [options.isClosed]
  */
 function Toggler( options ) {
 	this.eventBus = options.eventBus;
-	this._enable( options.$container, options.prefix, options.page, options.isClosed );
+	this.$container = options.$container;
+	this.prefix = options.prefix;
+	this.page = options.page;
+	this._enable();
 }
 
 /**
@@ -66,11 +69,11 @@ function saveExpandedSections( expandedSections ) {
  * @param {Page} page
  */
 function storeSectionToggleState( $heading, page ) {
-	var headline = $heading.find( 'span' ).attr( 'id' ),
-		isSectionOpen = $heading.hasClass( 'open-block' ),
+	var headline = $heading.find( '.mw-headline' ).attr( 'id' ),
 		expandedSections = getExpandedSections( page );
 
 	if ( headline && expandedSections[page.title] ) {
+		var isSectionOpen = $heading.hasClass( 'open-block' );
 		if ( isSectionOpen ) {
 			expandedSections[page.title][headline] = true;
 		} else {
@@ -99,12 +102,38 @@ function expandStoredSections( toggler, $container, page ) {
 		// toggle only if the section is not already expanded
 		if (
 			expandedSections[page.title][$headline.attr( 'id' )] &&
-		!$sectionHeading.hasClass( 'open-block' )
+			!$sectionHeading.hasClass( 'open-block' )
 		) {
-			toggler.toggle( $sectionHeading, page );
+			toggler.toggle( $sectionHeading, true );
 		}
 	} );
 }
+
+/**
+ * Check if sections should be collapsed by default
+ *
+ * @return {boolean}
+ */
+Toggler.prototype.isCollapsedByDefault = function () {
+	if ( this._isCollapsedByDefault === undefined ) {
+		// This body class overrides site settings and user preferences. As used
+		// on talk pages by DiscussionTools. (T321618, T322628)
+		if ( document.body.classList.contains( 'collapsible-headings-collapsed' ) ) {
+			this._isCollapsedByDefault = true;
+		} else {
+
+			// Check site config
+			this._isCollapsedByDefault = mw.config.get( 'wgMFCollapseSectionsByDefault' ) &&
+				// Only collapse on narrow devices
+				!browser.isWideScreen() &&
+				// Section collapsing can be disabled in MobilePreferences
+				// NB: 'expandSections' uses localStorage, unlike 'expandedSections'
+				// which uses sessionStorage
+				mw.storage.get( 'expandSections' ) !== 'true';
+		}
+	}
+	return this._isCollapsedByDefault;
+};
 
 /**
  * Given a heading, toggle it and any of its children
@@ -112,23 +141,31 @@ function expandStoredSections( toggler, $container, page ) {
  * @memberof Toggler
  * @instance
  * @param {jQuery.Object} $heading A heading belonging to a section
- * @param {Page} page
+ * @param {boolean} fromSaved Section is being toggled from a saved state
+ * @return {boolean}
  */
-Toggler.prototype.toggle = function ( $heading, page ) {
-	var indicator,
-		self = this,
-		wasExpanded = $heading.is( '.open-block' ),
-		$headingLabel = $heading.find( '.mw-headline' ),
-		$content = $heading.next();
+Toggler.prototype.toggle = function ( $heading, fromSaved ) {
+	if ( !fromSaved && $heading.hasClass( 'collapsible-heading-disabled' ) ) {
+		return false;
+	}
+
+	var self = this,
+		wasExpanded = $heading.is( '.open-block' );
 
 	$heading.toggleClass( 'open-block' );
 
 	arrowOptions.rotation = wasExpanded ? 0 : 180;
-	indicator = new Icon( arrowOptions );
-	$heading.data( 'indicator' ).attr( 'class', indicator.getClassName() );
+	var newIndicator = new Icon( arrowOptions );
+	var $indicatorElement = $heading.data( 'indicator' );
+	if ( $indicatorElement ) {
+		$indicatorElement.replaceWith( newIndicator.$el );
+		$heading.data( 'indicator', newIndicator.$el );
+	}
 
+	var $headingLabel = $heading.find( '.mw-headline' );
 	$headingLabel.attr( 'aria-expanded', !wasExpanded );
 
+	var $content = $heading.next();
 	if ( $content.hasClass( 'open-block' ) ) {
 		$content.removeClass( 'open-block' );
 		// jquery doesn't allow custom values for the hidden attribute it seems.
@@ -154,14 +191,14 @@ Toggler.prototype.toggle = function ( $heading, page ) {
 
 		self.eventBus.emit( 'section-toggled', {
 			expanded: wasExpanded,
-			isReferenceSection: Boolean( $content.attr( 'data-is-reference-section' ) ),
 			$heading: $heading
 		} );
 	} );
 
-	if ( !browser.isWideScreen() ) {
-		storeSectionToggleState( $heading, page );
+	if ( this.isCollapsedByDefault() ) {
+		storeSectionToggleState( $heading, this.page );
 	}
+	return true;
 };
 
 /**
@@ -169,13 +206,12 @@ Toggler.prototype.toggle = function ( $heading, page ) {
  *
  * @param {Toggler} toggler instance.
  * @param {jQuery.Object} $heading
- * @param {Page} page
  */
-function enableKeyboardActions( toggler, $heading, page ) {
+function enableKeyboardActions( toggler, $heading ) {
 	$heading.on( 'keypress', function ( ev ) {
 		if ( ev.which === 13 || ev.which === 32 ) {
 			// Only handle keypresses on the "Enter" or "Space" keys
-			toggler.toggle( $heading, page );
+			toggler.toggle( $heading );
 		}
 	} ).find( 'a' ).on( 'keypress mouseup', function ( ev ) {
 		ev.stopPropagation();
@@ -188,15 +224,13 @@ function enableKeyboardActions( toggler, $heading, page ) {
  * @memberof Toggler
  * @instance
  * @param {string} id An element ID within the $container
- * @param {Object} $container jQuery element to search in
- * @param {Page} page
  * @return {boolean} Target ID was found
  */
-Toggler.prototype.reveal = function ( id, $container, page ) {
+Toggler.prototype.reveal = function ( id ) {
 	var $target;
 	// jQuery will throw for hashes containing certain characters which can break toggling
 	try {
-		$target = $container.find( '#' + escapeSelector( id ) );
+		$target = this.$container.find( '#' + escapeSelector( id ) );
 	} catch ( e ) {}
 	if ( !$target || !$target.length ) {
 		return false;
@@ -208,7 +242,7 @@ Toggler.prototype.reveal = function ( id, $container, page ) {
 		$heading = $target.parents( '.collapsible-block' ).prev( '.collapsible-heading' );
 	}
 	if ( $heading.length && !$heading.hasClass( 'open-block' ) ) {
-		this.toggle( $heading, page );
+		this.toggle( $heading );
 	}
 	if ( $heading.length ) {
 		// scroll again after opening section (opening section makes the page longer)
@@ -218,47 +252,26 @@ Toggler.prototype.reveal = function ( id, $container, page ) {
 };
 
 /**
- * Enables section toggling in a given container when wgMFCollapseSectionsByDefault
- * is enabled.
+ * Enables section toggling in a given container.
  *
  * @memberof Toggler
  * @instance
- * @param {jQuery.Object} $container to apply toggling to
- * @param {string} prefix a prefix to use for the id.
- * @param {Page} page to allow storage of session for future visits
- * @param {boolean} [isClosed] whether the element should begin closed
  * @private
  */
-Toggler.prototype._enable = function ( $container, prefix, page, isClosed ) {
-	var tagName, expandSections, indicator, $content,
-		$firstHeading,
-		$link,
-		self = this,
-		collapseSectionsByDefault = mw.config.get( 'wgMFCollapseSectionsByDefault' );
+Toggler.prototype._enable = function () {
+	var self = this;
 
-	// Also allow .section-heading if some extensions like Wikibase
-	// want to toggle other headlines than direct descendants of $container.
-	$firstHeading = $container.find( '> h1,> h2,> h3,> h4,> h5,> h6,.section-heading' ).eq( 0 );
-	tagName = $firstHeading.prop( 'tagName' ) || 'H1';
-
-	if ( collapseSectionsByDefault === undefined ) {
-		// Old default behavior if on cached output
-		collapseSectionsByDefault = true;
-	}
-	// NB: 'expandSections' uses localStorage, unlike 'expandedSections' which uses sessionStorage
-	expandSections = !collapseSectionsByDefault || mw.storage.get( 'expandSections' ) === 'true';
-
-	$container.children( tagName ).each( function ( i ) {
-		var isReferenceSection,
-			$heading = $container.find( this ),
+	// FIXME This should use .find() instead of .children(), some extensions like Wikibase
+	// want to toggle other headlines than direct descendants of $container. (T95889)
+	this.$container.children( '.section-heading' ).each( function ( i ) {
+		var $heading = self.$container.find( this ),
 			$headingLabel = $heading.find( '.mw-headline' ),
 			$indicator = $heading.find( '.indicator' ),
-			id = prefix + 'collapsible-block-' + i;
+			id = self.prefix + 'collapsible-block-' + i;
 		// Be sure there is a `section` wrapping the section content.
 		// Otherwise, collapsible sections for this page is not enabled.
 		if ( $heading.next().is( 'section' ) ) {
-			$content = $heading.next( 'section' );
-			isReferenceSection = Boolean( $content.attr( 'data-is-reference-section' ) );
+			var $content = $heading.next( 'section' );
 			$heading
 				.addClass( 'collapsible-heading ' )
 				.data( 'section-number', i )
@@ -266,10 +279,11 @@ Toggler.prototype._enable = function ( $container, prefix, page, isClosed ) {
 					// don't toggle, if the click target was a link
 					// (a link in a section heading)
 					// See T117880
-					if ( !ev.target.href ) {
+					var clickedLink = ev.target.closest( 'a' );
+					if ( !clickedLink || !clickedLink.href ) {
 						// prevent taps/clicks on edit button after toggling (T58209)
 						ev.preventDefault();
-						self.toggle( $heading, page );
+						self.toggle( $heading );
 					}
 				} );
 			$headingLabel
@@ -280,9 +294,8 @@ Toggler.prototype._enable = function ( $container, prefix, page, isClosed ) {
 					'aria-expanded': 'false'
 				} );
 
-			arrowOptions.rotation = expandSections ? 180 : 0;
-			indicator = new Icon( arrowOptions );
-
+			arrowOptions.rotation = !self.isCollapsedByDefault() ? 180 : 0;
+			var indicator = new Icon( arrowOptions );
 			if ( $indicator.length ) {
 				// replace the existing indicator
 				$indicator.replaceWith( indicator.$el );
@@ -300,22 +313,19 @@ Toggler.prototype._enable = function ( $container, prefix, page, isClosed ) {
 					id: id
 				} )
 				.on( 'beforematch', function () {
-					self.toggle( $heading, page );
+					self.toggle( $heading );
 				} )
 				.addClass( 'collapsible-block-js' )
 				.get( 0 ).setAttribute( 'hidden', 'until-found' );
 
-			enableKeyboardActions( self, $heading, page );
-			if (
-				!isReferenceSection && (
-					!isClosed && browser.isWideScreen() || expandSections
-				)
-			) {
+			enableKeyboardActions( self, $heading );
+
+			if ( !self.isCollapsedByDefault() ) {
 				// Expand sections by default on wide screen devices
 				// or if the expand sections setting is set.
 				// The wide screen logic for determining whether to collapse sections initially
 				// should be kept in sync with mobileoptions#initLocalStorageElements().
-				self.toggle( $heading, page );
+				self.toggle( $heading );
 			}
 		}
 	} );
@@ -332,10 +342,10 @@ Toggler.prototype._enable = function ( $container, prefix, page, isClosed ) {
 			hash = hash.slice( 1 );
 			// Per https://html.spec.whatwg.org/multipage/browsing-the-web.html#target-element
 			// we try the raw fragment first, then the percent-decoded fragment.
-			if ( !self.reveal( hash, $container, page ) ) {
+			if ( !self.reveal( hash ) ) {
 				var decodedHash = mw.util.percentDecodeFragment( hash );
 				if ( decodedHash ) {
-					self.reveal( decodedHash, $container, page );
+					self.reveal( decodedHash );
 				}
 			}
 		}
@@ -359,24 +369,13 @@ Toggler.prototype._enable = function ( $container, prefix, page, isClosed ) {
 
 	checkInternalRedirectAndHash();
 	checkHash();
-	// Restricted to links created by editors and thus outside our control
-	// T166544 - don't do this for reference links - they will be handled elsewhere
-	$link = $container.find( 'a:not(.reference a)' );
-	$link.on( 'click', function () {
-		// the link might be an internal link with a hash.
-		// if it is check if we need to reveal any sections.
-		if ( $link.attr( 'href' ) !== undefined &&
-		$link.attr( 'href' ).indexOf( '#' ) > -1
-		) {
-			checkHash();
-		}
-	} );
+
 	util.getWindow().on( 'hashchange', function () {
 		checkHash();
 	} );
 
-	if ( !browser.isWideScreen() && page ) {
-		expandStoredSections( this, $container, page );
+	if ( this.isCollapsedByDefault() && this.page ) {
+		expandStoredSections( this, this.$container, this.page );
 	}
 };
 

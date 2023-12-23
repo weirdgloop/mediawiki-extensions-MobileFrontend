@@ -11,13 +11,10 @@ const
 	ENTRIES = {
 		startup: 'mobile.startup',
 		editor: 'mobile.editor.overlay',
-		editorVe: 'mobile.editor.ve',
 		languages: 'mobile.languages.structured',
 		mediaViewer: 'mobile.mediaViewer',
 		mobileInit: 'mobile.init',
-		talk: 'mobile.talk.overlays',
 		mobileOptions: 'mobile.special.mobileoptions.scripts',
-		nearby: 'mobile.special.nearby.scripts',
 		userLogin: 'mobile.special.userlogin.scripts',
 		watchlist: 'mobile.special.watchlist.scripts'
 	};
@@ -56,15 +53,12 @@ module.exports = ( env, argv ) => ( {
 		// loading, we won't be required to explicitly create this new chunk and
 		// this can be removed.
 		[ENTRIES.editor]: './src/mobile.editor.overlay/mobile.editor.overlay.js',
-		[ENTRIES.editorVe]: './src/mobile.editor.ve/mobile.editor.ve.js',
 		[ENTRIES.languages]: './src/mobile.languages.structured/mobile.languages.structured.js',
 		[ENTRIES.mediaViewer]: './src/mobile.mediaViewer/mobile.mediaViewer.js',
-		[ENTRIES.talk]: './src/mobile.talk.overlays/mobile.talk.overlays.js',
 		// all mobile skins,
 		[ENTRIES.mobileInit]: './src/mobile.init/mobile.init.js',
 		// T212823 Make a chunk for each mobile special page
 		[ENTRIES.mobileOptions]: './src/mobile.special.mobileoptions.scripts.js',
-		[ENTRIES.nearby]: './src/mobile.special.nearby.scripts/mobile.special.nearby.scripts.js',
 		[ENTRIES.userLogin]: './src/mobile.special.userlogin.scripts.js',
 		[ENTRIES.watchlist]: './src/mobile.special.watchlist.scripts/mobile.special.watchlist.scripts.js'
 	},
@@ -138,19 +132,15 @@ module.exports = ( env, argv ) => ( {
 					// this cacheGroup
 					enforce: true,
 					// Only consider splitting chunks off of these whitelisted entry names
-					// eslint-disable-next-line no-restricted-syntax
 					chunks: ( chunk ) => [
 						ENTRIES.startup,
 						ENTRIES.categories,
 						ENTRIES.editor,
-						ENTRIES.editorVe,
 						ENTRIES.languages,
 						ENTRIES.mediaViewer,
-						ENTRIES.talk,
 						ENTRIES.mobileInit,
 						ENTRIES.mobileDiff,
 						ENTRIES.mobileOptions,
-						ENTRIES.nearby,
 						ENTRIES.userLogin,
 						ENTRIES.watchlist
 					].includes( chunk.name )
@@ -200,9 +190,8 @@ module.exports = ( env, argv ) => ( {
 		// Note: entrypoint size implicitly includes the mobile.startup.runtime and mobile.common
 		// chunks.
 		maxAssetSize: 48.1 * 1024,
-		maxEntrypointSize: 83.3 * 1024,
+		maxEntrypointSize: 84 * 1024,
 		// The default filter excludes map files but we rename ours.
-		// eslint-disable-next-line no-restricted-properties
 		assetFilter: ( filename ) => !filename.endsWith( srcMapExt )
 	}
 } );

@@ -19,6 +19,11 @@ QUnit.module( 'MobileFrontend mobile.editor.overlay/SourceEditorOverlay', {
 		mediaWiki.setUp( sandbox, global );
 		mustache.setUp( sandbox, global );
 		oo.setUp( sandbox, global );
+		global.OO.ui.MultilineTextInputWidget = function () {
+			return {
+				$element: global.$( '<div>' )
+			};
+		};
 		sandbox.stub( mw, 'msg' ).withArgs( 'mobile-frontend-editor-continue' ).returns( 'Continue' )
 			.withArgs( 'mobile-frontend-editor-save' ).returns( 'Save' )
 			.withArgs( 'mobile-frontend-editor-publish' ).returns( 'Publish' );
@@ -37,13 +42,25 @@ QUnit.module( 'MobileFrontend mobile.editor.overlay/SourceEditorOverlay', {
 		sandbox.stub( window, 'scrollTo' );
 		sandbox.stub( mw.util, 'getUrl' ).returns( '/w/index.php?title=User:Test' );
 		sandbox.stub( mw.config, 'get' )
+			.withArgs( 'wgPageName' ).returns( 'User:Test' )
+			.withArgs( 'wgRelevantPageName' ).returns( 'User:Test' )
+			.withArgs( 'wgRevisionId' ).returns( 123 )
+			.withArgs( 'wgArticleId' ).returns( 321 )
+			.withArgs( 'wgNamespaceNumber' ).returns( 2 )
+			.withArgs( 'wgIsMainPage' ).returns( false )
 			.withArgs( 'wgFormattedNamespaces' ).returns( { 2: 'User' } )
-			.withArgs( 'wgNamespaceIds' ).returns( { user: 2 } );
-		sandbox.stub( mw.Title, 'makeTitle' ).returns( {
+			.withArgs( 'wgNamespaceIds' ).returns( { user: 2 } )
+			.withArgs( 'wgVisualEditorConfig' ).returns( { namespaces: [ 1, 2 ] } );
+		const stubTitle = {
 			getUrl: function () {
 				return '/w/index.php?title=User:Test';
+			},
+			getPrefixedText: function () {
+				return 'User:Test';
 			}
-		} );
+		};
+		sandbox.stub( mw.Title, 'makeTitle' ).returns( stubTitle );
+		sandbox.stub( mw.Title, 'newFromText' ).returns( stubTitle );
 		getContentStub.returns( util.Deferred().resolve( {
 			text: 'section 0',
 			blockinfo: null
@@ -106,7 +123,6 @@ QUnit.test( '#initialize, with given page and section', function ( assert ) {
 	// The gateway is initialized with the correct properties,
 	// particularly the correct section ID.
 	assert.strictEqual( editorOverlay.gateway.title, 'test' );
-	assert.strictEqual( editorOverlay.gateway.isNewPage, undefined );
 	assert.strictEqual( editorOverlay.gateway.oldId, undefined );
 	assert.strictEqual( editorOverlay.gateway.sectionId, '0' );
 
@@ -122,7 +138,6 @@ QUnit.test( '#initialize, without a section', function ( assert ) {
 
 	return getContentStub().then( function () {
 		assert.strictEqual( editorOverlay.gateway.title, 'test.css' );
-		assert.strictEqual( editorOverlay.gateway.isNewPage, undefined );
 		assert.strictEqual( editorOverlay.gateway.oldId, undefined );
 		assert.strictEqual( editorOverlay.gateway.sectionId, undefined );
 	} );
@@ -147,9 +162,7 @@ QUnit.test( '#initialize, as anonymous', function ( assert ) {
 		isAnon: true
 	} );
 
-	// SourceEditorOverlay triggers a call to _loadContent so will always start an async request.
-	// Make this test async to ensure it finishes and doesn't cause side effects to other functions.
-	return getContentStub().then( function () {
+	return editorOverlay.getLoadingPromise().then( function () {
 		assert.true( editorOverlay.$anonWarning.length > 0, 'Editorwarning (IP will be saved) visible.' );
 		assert.true( editorOverlay.$el.find( '.anonymous' ).length > 0, 'Continue login has a second class.' );
 	} );

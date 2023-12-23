@@ -1,21 +1,22 @@
+@import 'mediawiki.skin.variables.less';
 @import '../../../mobile.less/mobile.variables.less';
 @import 'mediawiki.mixins.less';
 
 @drawerPadding: 20px;
 
 .drawer.references-drawer {
-	background-color: @colorGray1;
-	color: @colorGray12;
+	background-color: #000;
+	color: #c8ccd1;
 	max-height: 50%; // on tablet this will become capped at 400px
 	overflow-y: auto;
 	padding: @drawerPadding/2 @drawerPadding @drawerPadding @drawerPadding;
 
-	.mw-ui-icon:before {
-		opacity: 0.5;
-	}
-
 	a {
 		color: #69f;
+	}
+
+	a.new {
+		color: @color-link-red;
 	}
 
 	.references-drawer__header {
@@ -25,7 +26,7 @@
 	}
 
 	.references-drawer__title {
-		color: @colorGray7;
+		color: #72777d;
 		cursor: default;
 		letter-spacing: 0.2em;
 		font-size: 0.75em;

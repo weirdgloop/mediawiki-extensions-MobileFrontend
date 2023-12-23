@@ -1,3 +1,4 @@
+@import 'mediawiki.skin.variables.less';
 @import '../../mobile.less/mobile.variables.less';
 
 @itemPaddingV: 0.8em;
@@ -5,6 +6,8 @@
 @thumbGap: 15px;
 @thumbWidth: 70px;
 @thumbSpace: @thumbWidth + @thumbGap;
+
+/* stylelint-disable no-descending-specificity */
 
 // Pages
 
@@ -32,41 +35,23 @@
 	overflow: hidden;
 
 	li {
-		color: @colorGray5;
+		color: @color-subtle;
 		position: relative;
-		border-bottom: 1px solid @grayLightest;
+		border-bottom: @border-width-base @border-style-base #eaecf0;
 		padding-top: @itemPaddingV;
 		padding-bottom: @itemPaddingV;
 		// avoid the gap between thumbnails
 		margin: -1px 0 0;
 		line-height: 19px;
+		display: flex;
+		align-items: center;
 
-		// FIXME: use more generic class here to apply to any icon in a page list
-		.watch-this-article {
-			position: absolute;
-			right: 0;
-			top: @itemPaddingV;
-			// undo thumbnail damage
-			margin-top: 1px;
-
-			button {
-				position: absolute;
-				text-indent: inherit;
-				outline: 0;
-			}
-		}
-
-		// T297023: Prevent overriding `mw-ui-icon-element` and making text visible
-		> a:not( .mw-ui-icon-element ) {
+		a:not( .cdx-button ),
+		.title {
+			flex-grow: 1;
 			display: block;
-			color: @grayMedium;
-
-			&:active,
-			&:hover,
-			&:visited {
-				text-decoration: none;
-				color: @grayMedium;
-			}
+			text-decoration: none;
+			color: #72777d;
 		}
 	}
 
@@ -85,7 +70,7 @@
 	// FIXME: Add component class to all info classes in currently defined page-lists
 	.info,
 	.component {
-		color: @grayMedium;
+		color: #72777d;
 		line-height: 1.2;
 	}
 
@@ -123,7 +108,7 @@
 	&.side-list .list-thumb {
 		padding-top: @itemPaddingV;
 		padding-bottom: @itemPaddingV;
-		color: @colorGray2;
+		color: @color-base;
 
 		p {
 			line-height: 1.2;

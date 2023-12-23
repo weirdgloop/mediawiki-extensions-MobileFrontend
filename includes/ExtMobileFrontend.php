@@ -1,12 +1,13 @@
 <?php
 
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
 use MobileFrontend\Api\ApiParseExtender;
 use MobileFrontend\ContentProviders\IContentProvider;
+use MobileFrontend\Hooks\HookRunner;
 use MobileFrontend\Transforms\LazyImageTransform;
 use MobileFrontend\Transforms\MakeSectionsTransform;
 use MobileFrontend\Transforms\MoveLeadParagraphTransform;
-use MobileFrontend\Transforms\SubHeadingTransform;
 use Wikibase\Client\WikibaseClient;
 use Wikibase\DataModel\Entity\ItemId;
 use Wikibase\DataModel\Services\Lookup\TermLookupException;
@@ -31,7 +32,6 @@ class ExtMobileFrontend {
 		$canViewHidden = !$isHidden || $out->getAuthority()->isAllowed( 'hideuser' );
 
 		$out->addModuleStyles( [
-			'mediawiki.ui.icon',
 			'mobile.userpage.styles', 'mobile.userpage.images'
 		] );
 
@@ -94,10 +94,7 @@ class ExtMobileFrontend {
 			$title->canExist()
 			&& $title->getContentModel() == CONTENT_MODEL_WIKITEXT
 			// And not in certain namespaces
-			&& array_search(
-				$ns,
-				$config->get( 'MFNamespacesWithoutCollapsibleSections' )
-			) === false
+			&& !in_array( $ns, $config->get( 'MFNamespacesWithoutCollapsibleSections' ) )
 			// And not when what's shown is not actually article text
 			&& $isView
 		);
@@ -109,8 +106,8 @@ class ExtMobileFrontend {
 			$context
 		);
 
-		$hookContainer = $services->getHookContainer();
-		$hookContainer->run( 'MobileFrontendBeforeDOM', [ $context, $formatter ] );
+		$hookRunner = new HookRunner( $services->getHookContainer() );
+		$hookRunner->onMobileFrontendBeforeDOM( $context, $formatter );
 
 		$shouldLazyTransformImages = $featureManager->isFeatureAvailableForCurrentUser( 'MFLazyLoadImages' );
 		$leadParagraphEnabled = in_array( $ns, $config->get( 'MFNamespacesWithLeadParagraphs' ) );
@@ -121,8 +118,6 @@ class ExtMobileFrontend {
 		if ( $enableSections ) {
 			$options = $config->get( 'MFMobileFormatterOptions' );
 			$topHeadingTags = $options['headings'];
-
-			$transforms[] = new SubHeadingTransform( $topHeadingTags );
 
 			$transforms[] = new MakeSectionsTransform(
 				$topHeadingTags,
@@ -138,9 +133,12 @@ class ExtMobileFrontend {
 			$transforms[] = new MoveLeadParagraphTransform( $title, $title->getLatestRevID() );
 		}
 
+		$start = microtime( true );
 		$formatter->applyTransforms( $transforms );
+		$end = microtime( true );
+		$report = sprintf( "MobileFormatter took %.3f seconds", $end - $start );
 
-		return $formatter->getText();
+		return $formatter->getText() . "\n<!-- $report -->";
 	}
 
 	/**
@@ -156,9 +154,9 @@ class ExtMobileFrontend {
 			return User::newFromAnyId( null, $titleText, null );
 		}
 
-		$pageUserId = User::idFromName( $titleText );
-		if ( $pageUserId ) {
-			return User::newFromId( $pageUserId );
+		$user = User::newFromName( $titleText );
+		if ( $user && $user->isRegistered() ) {
+			return $user;
 		}
 
 		return null;

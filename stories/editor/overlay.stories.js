@@ -1,6 +1,5 @@
 import '../../node_modules/oojs-ui/dist/oojs-ui-core.js';
 import '../../node_modules/oojs-ui/dist/oojs-ui-toolbars.js';
-import '../../.storybook/resolve-less-imports/mediawiki.ui.input/input.less';
 import { wrap } from '../utils';
 import SourceEditorOverlay from '../../src/mobile.editor.overlay/SourceEditorOverlay';
 import VisualEditorOverlay from '../../src/mobile.editor.overlay/VisualEditorOverlay';
@@ -48,7 +47,6 @@ export default {
 export const _VisualEditorOverlay = () => {
 	const overlay = new VisualEditorOverlay( {
 		title: 'Banana',
-		visualEditorConfig: {},
 		dataPromise: Promise.resolve( {} ),
 		editorOptions: {}
 	} );
@@ -63,7 +61,6 @@ _VisualEditorOverlay.story = {
 export const VisualEditorOverlayWithAnonWarning = () => {
 	const overlay = new VisualEditorOverlay( {
 		isAnon: true,
-		visualEditorConfig: {},
 		dataPromise: Promise.resolve( {} ),
 		editorOptions: {
 			title: 'Banana',
@@ -83,8 +80,7 @@ export const SourceEditorOverlayWithAnonWarning = () => {
 		title: 'Banana',
 		isAnon: true,
 		api: fakeApi,
-		editorOptions: {},
-		visualEditorConfig: {}
+		editorOptions: {}
 	} );
 	overlay.show();
 	return overlay.$el[0];
@@ -98,8 +94,7 @@ export const SourceEditorOverlayBlockedUser = () => {
 	const overlay = new SourceEditorOverlay( {
 		title: 'Banana',
 		api: blockedApi,
-		editorOptions: {},
-		visualEditorConfig: {}
+		editorOptions: {}
 	} );
 	overlay.show();
 	// FIXME: This although weird reflects how this actually works.
@@ -121,8 +116,7 @@ export const SourceEditorOverlayHappyPath = () => {
 	const overlay = new SourceEditorOverlay( {
 		title: 'Banana',
 		api: fakeApi,
-		editorOptions: {},
-		visualEditorConfig: {}
+		editorOptions: {}
 	} );
 	overlay.show();
 	return overlay.$el[0];
@@ -136,8 +130,7 @@ export const SourceEditorOverlayAbuseFilterWarning = () => {
 	const overlay = new SourceEditorOverlay( {
 		title: 'Banana',
 		api: abuseFilterWarningApi,
-		editorOptions: {},
-		visualEditorConfig: {}
+		editorOptions: {}
 	} );
 	overlay.show();
 	return overlay.$el[0];
@@ -151,8 +144,7 @@ export const SourceEditorOverlayAbuseFilterDisallowed = () => {
 	const overlay = new SourceEditorOverlay( {
 		title: 'Banana',
 		api: abuseFilterDisallowedApi,
-		editorOptions: {},
-		visualEditorConfig: {}
+		editorOptions: {}
 	} );
 	overlay.show();
 	return overlay.$el[0];
@@ -166,8 +158,7 @@ export const SourceEditorOverlayAbuseFilterSpam = () => {
 	const overlay = new SourceEditorOverlay( {
 		title: 'Banana',
 		api: abuseFilterSpamApi,
-		editorOptions: {},
-		visualEditorConfig: {}
+		editorOptions: {}
 	} );
 	overlay.show();
 	return overlay.$el[0];
@@ -181,8 +172,7 @@ export const _SourceEditorOverlayAbuseFilterSpam = () => {
 	const overlay = new SourceEditorOverlay( {
 		title: 'Banana',
 		api: abuseFilterSpamApi,
-		editorOptions: {},
-		visualEditorConfig: {}
+		editorOptions: {}
 	} );
 	overlay.show();
 	return overlay.$el[0];
@@ -196,8 +186,7 @@ export const SourceEditorOverlayEditConflict = () => {
 	const overlay = new SourceEditorOverlay( {
 		title: 'Banana',
 		api: editConflictApi,
-		editorOptions: {},
-		visualEditorConfig: {}
+		editorOptions: {}
 	} );
 	overlay.show();
 	return overlay.$el[0];
@@ -211,8 +200,7 @@ export const SourceEditorOverlayWikiIsReadonly = () => {
 	const overlay = new SourceEditorOverlay( {
 		title: 'Banana',
 		api: readOnlyApi,
-		editorOptions: {},
-		visualEditorConfig: {}
+		editorOptions: {}
 	} );
 	overlay.show();
 	return overlay.$el[0];
@@ -226,8 +214,7 @@ export const SourceEditorOverlayTriggerCaptcha = () => {
 	const overlay = new SourceEditorOverlay( {
 		title: 'Banana',
 		api: triggerCaptchaApi,
-		editorOptions: {},
-		visualEditorConfig: {}
+		editorOptions: {}
 	} );
 	overlay.show();
 	return overlay.$el[0];
@@ -241,8 +228,7 @@ export const SourceEditorOverlayGenericError = () => {
 	const overlay = new SourceEditorOverlay( {
 		title: 'Banana',
 		api: fakeFailToSaveApi,
-		editorOptions: {},
-		visualEditorConfig: {}
+		editorOptions: {}
 	} );
 	overlay.show();
 	return overlay.$el[0];

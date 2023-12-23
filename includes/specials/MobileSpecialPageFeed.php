@@ -1,5 +1,6 @@
 <?php
 
+use MediaWiki\Permissions\Authority;
 use MediaWiki\Revision\RevisionRecord;
 use Wikimedia\IPUtils;
 
@@ -22,6 +23,10 @@ abstract class MobileSpecialPageFeed extends MobileSpecialPage {
 	public function execute( $par ) {
 		$out = $this->getOutput();
 		$out->addModuleStyles( [
+			// FIXME: This module should be removed when the following tickets are resolved:
+			// * T305113
+			// * T109277
+			// * T117279
 			'mobile.special.pagefeed.styles',
 			'mobile.user.icons'
 		] );
@@ -74,7 +79,7 @@ abstract class MobileSpecialPageFeed extends MobileSpecialPage {
 	/**
 	 * Generates revision text based on user's rights and preference
 	 * @param RevisionRecord $rev
-	 * @param User $user viewing the revision
+	 * @param Authority $user viewing the revision
 	 * @param bool $unhide whether the user wants to see hidden comments
 	 *   if the user doesn't have permission, comment will display as rev-deleted-comment
 	 * @return string plain text label
@@ -107,9 +112,9 @@ abstract class MobileSpecialPageFeed extends MobileSpecialPage {
 	/**
 	 * Generates username text based on user's rights and preference
 	 * @param RevisionRecord $rev
-	 * @param User $user viewing the revision
+	 * @param Authority $user viewing the revision
 	 * @param bool $unhide whether the user wants to see hidden usernames
-	 * @return string plain test label
+	 * @return string plain text label
 	 */
 	protected function getUsernameText( $rev, $user, $unhide ) {
 		$revUser = $rev->getUser( RevisionRecord::FOR_THIS_USER, $user );
@@ -117,7 +122,7 @@ abstract class MobileSpecialPageFeed extends MobileSpecialPage {
 			$username = $revUser->getName();
 		} else {
 			$revUser = $rev->getUser( RevisionRecord::RAW );
-			$username = IPUtils::prettifyIP( $revUser->getName() );
+			$username = IPUtils::prettifyIP( $revUser->getName() ) ?? $revUser->getName();
 		}
 		if (
 			!RevisionRecord::userCanBitfield(
@@ -129,7 +134,6 @@ abstract class MobileSpecialPageFeed extends MobileSpecialPage {
 		) {
 			$username = $this->msg( 'rev-deleted-user' )->text();
 		}
-		// @phan-suppress-next-line PhanTypeMismatchReturnNullable Null is documented on IPUtils::prettifyIP
 		return $username;
 	}
 
@@ -159,10 +163,15 @@ abstract class MobileSpecialPageFeed extends MobileSpecialPage {
 		$lang = $this->getLanguage();
 
 		if ( (bool)( $options['isAnon'] ?? false ) ) {
-			$usernameClass = MobileUI::iconClass( 'userAnonymous', 'before', 'mw-mf-user mw-mf-anon' );
+			$usernameClass = 'mw-mf-user mw-mf-anon';
+			$iconHTML = MobileUI::icon( 'userAnonymous' );
 		} else {
-			$usernameClass = MobileUI::iconClass( 'userAvatar', 'before', 'mw-mf-user' );
+			$usernameClass = 'mw-mf-user';
+			$iconHTML = MobileUI::icon( 'userAvatar' );
 		}
+
+		// Add whitespace between icon and label.
+		$iconHTML .= ' ';
 
 		$html = Html::openElement( 'li', [ 'class' => 'page-summary' ] );
 
@@ -178,6 +187,7 @@ abstract class MobileSpecialPageFeed extends MobileSpecialPage {
 
 		if ( isset( $options['username'] ) && $options['username'] && $this->showUsername ) {
 			$html .= Html::rawElement( 'p', [ 'class' => $usernameClass ],
+				$iconHTML . ' ' .
 				Html::element( 'span', [], $options['username'] )
 			);
 		}

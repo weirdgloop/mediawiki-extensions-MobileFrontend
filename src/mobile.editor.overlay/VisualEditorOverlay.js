@@ -8,7 +8,8 @@ var EditorOverlayBase = require( './EditorOverlayBase' ),
 	setPreferredEditor = require( './setPreferredEditor' ),
 	util = require( '../mobile.startup/util' ),
 	OverlayManager = require( '../mobile.startup/OverlayManager' ),
-	overlayManager = OverlayManager.getSingleton();
+	overlayManager = OverlayManager.getSingleton(),
+	currentPage = require( '../mobile.startup/currentPage' );
 
 /**
  * Overlay for VisualEditor view
@@ -47,8 +48,7 @@ function VisualEditorOverlay( options ) {
 		api: options.api,
 		title: options.title,
 		sectionId: options.sectionId,
-		oldId: options.oldId,
-		isNewPage: options.isNewPage
+		oldId: options.oldId
 	} );
 
 	this.origDataPromise = this.options.dataPromise || mw.libs.ve.targetLoader.requestPageData(
@@ -58,14 +58,29 @@ function VisualEditorOverlay( options ) {
 			sessionStore: true,
 			section: options.sectionId || null,
 			oldId: options.oldId || undefined,
-			targetName: ve.init.mw.MobileArticleTarget.static.trackingName
+			targetName: ve.init.mw.MobileArticleTarget.static.trackingName,
+			preload: options.preload,
+			preloadparams: options.preloadparams,
+			editintro: options.editintro
 		}
 	);
+
+	var modes = [];
+	this.currentPage = currentPage();
+	if ( this.currentPage.isVEVisualAvailable() ) {
+		modes.push( 'visual' );
+	}
+	if ( this.currentPage.isVESourceAvailable() ) {
+		modes.push( 'source' );
+	}
 
 	this.target = ve.init.mw.targetFactory.create( 'article', this, {
 		$element: this.$el,
 		// string or null, but not undefined
-		section: this.options.sectionId || null
+		section: this.options.sectionId || null,
+		modes: modes,
+		// If source is passed in without being in modes, it'll just fall back to visual
+		defaultMode: this.options.mode === 'source' ? 'source' : 'visual'
 	} );
 	this.target.once( 'surfaceReady', function () {
 		surfaceReady.resolve();
@@ -74,12 +89,25 @@ function VisualEditorOverlay( options ) {
 			this.log( { action: 'firstChange' } );
 		}.bind( this ) );
 	}.bind( this ) );
+	var firstLoad = true;
+	this.target.on( 'surfaceReady', function () {
+		setPreferredEditor( this.target.getDefaultMode() === 'source' ? 'SourceEditor' : 'VisualEditor' );
+		// On first surfaceReady we wait for any dialogs to be closed before running targetInit.
+		// On subsequent surfaceReady's (i.e. edit mode switch) we can initialize immediately.
+		if ( !firstLoad ) {
+			this.targetInit();
+		}
+		firstLoad = false;
+	}.bind( this ) );
 
 	this.target.load( this.origDataPromise );
 
 	// Overlay is only shown after this is resolved. It must be resolved
 	// with the API response regardless of what we are waiting for.
 	this.dataPromise = this.origDataPromise.then( function ( data ) {
+		this.gateway.wouldautocreate =
+			data && data.visualeditor && data.visualeditor.wouldautocreate;
+
 		return surfaceReady.then( function () {
 			this.$el.removeClass( 'editor-overlay-ve-initializing' );
 			return data && data.visualeditor;
@@ -156,6 +184,7 @@ mfExtend( VisualEditorOverlay, EditorOverlayBase, {
 		if ( this.target ) {
 			this.target.afterSurfaceReady();
 			this.scrollToLeadParagraph();
+			this.showEditNotices();
 		}
 	},
 	/**

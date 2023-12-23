@@ -35,9 +35,6 @@
 	"mobile-frontend-joined-months": "ቅድሚ {{PLURAL:$2|$2 ወርሒ|$2 ኣዋርሕ}} {{GENDER:$1|ተጸንቢሩ|ተጸንቢራ}}",
 	"mobile-frontend-joined-years": "ቅድሚ {{PLURAL:$2|$2 ዓመት|$2 ዓመታት}} {{GENDER:$1|ተጸንቢሩ|ተጸንቢራ}}",
 	"mobile-frontend-language-heading": "<strong>ቋንቋታት</strong>",
-	"mobile-frontend-languages-header": "ቋንቋታት",
-	"mobile-frontend-languages-header-page": "$1 - ካልኦት ቋንቋታት",
-	"mobile-frontend-languages-text": "$1 ብ$2 {{PLURAL:$2|ቋንቋ|ቋንቋታት}} ይርከብ እዩ።",
 	"mobile-frontend-languages-structured-overlay-suggested-languages-header": "ዝምከሩ ቋንቋታት",
 	"mobile-frontend-languages-structured-overlay-all-languages-header": "ካልኦት ቋንቋታት",
 	"mobile-frontend-languages-structured-overlay-search-input-placeholder": "ቋንቋ ድለይ",
@@ -49,7 +46,6 @@
 	"mobile-frontend-media-load-fail-retry": "ኣሓድስ",
 	"mobile-frontend-missing-image": "ምስሊ",
 	"mobile-frontend-tap-to-display-image": "ምስሊ ንምርኣይ ጠውቕ።",
-	"mobile-frontend-nearby-info-heading": "ኣብ ከባቢኻ ዘለዉ ቦታታት",
 	"mobile-frontend-overlay-close": "ዕጸው",
 	"mobile-frontend-privacy-link-text": "ስትረት",
 	"mobile-frontend-requires-title": "ገጽ ኣይተረኽበን",
@@ -69,6 +65,7 @@
 	"mobile-frontend-loading-message": "ይጽዕን ኣሎ...",
 	"mobile-frontend-mobile-option-MFEnableFontChanger": "ዓቐን ቅርጺ ፊደል",
 	"mobile-frontend-mobile-option-amc-learn-more": "ተወሳኺ ፍለጥ",
+	"mobile-frontend-user-pref-option": "ምርጫታት ተጠቃሚ",
 	"mobile-frontend-amc-outreach-no-thanks": "ኣይፋል፣ የቐንየለይ",
 	"prefs-mobile": "ምርጫታት ሞባይል"
 }

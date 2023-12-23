@@ -4,11 +4,11 @@ namespace MobileFrontend\Transforms;
 
 use DOMDocument;
 use DOMElement;
+use DOMNode;
 use DOMXPath;
 use Exception;
 use Html;
 use MediaWiki\ResourceLoader\ResourceLoader;
-use MobileUI;
 use Wikimedia\Parsoid\Utils\DOMCompat;
 
 /**
@@ -55,16 +55,41 @@ class MakeSectionsTransform implements IMobileTransform {
 	}
 
 	/**
+	 * @param DOMNode|null $node
+	 * @return string|false Heading tag name if the node is a heading
+	 */
+	private function getHeadingName( $node ) {
+		if ( !( $node instanceof DOMElement ) ) {
+			return false;
+		}
+		// We accept both kinds of nodes that can be returned by getTopHeadings():
+		// a `<h1>` to `<h6>` node, or a `<div class="mw-heading">` node wrapping it.
+		// In the future `<div class="mw-heading">` will be required (T13555).
+		if ( DOMCompat::getClassList( $node )->contains( 'mw-heading' ) ) {
+			$node = DOMCompat::querySelector( $node, implode( ',', $this->topHeadingTags ) );
+			if ( !( $node instanceof DOMElement ) ) {
+				return false;
+			}
+		}
+		return $node->tagName;
+	}
+
+	/**
 	 * Actually splits the body of the document into sections
 	 *
 	 * @param DOMElement $body representing the HTML of the current article. In the HTML the sections
 	 *  should not be wrapped.
-	 * @param DOMElement[] $headings The headings returned by
-	 * @see MobileFormatter::getHeadings
+	 * @param DOMElement[] $headingWrappers The headings (or wrappers) returned by getTopHeadings():
+	 *  `<h1>` to `<h6>` nodes, or `<div class="mw-heading">` nodes wrapping them.
+	 *  In the future `<div class="mw-heading">` will be required (T13555).
 	 */
-	private function makeSections( DOMElement $body, array $headings ) {
+	private function makeSections( DOMElement $body, array $headingWrappers ) {
+		$ownerDocument = $body->ownerDocument;
+		if ( $ownerDocument === null ) {
+			return;
+		}
 		// Find the parser output wrapper div
-		$xpath = new DOMXPath( $body->ownerDocument );
+		$xpath = new DOMXPath( $ownerDocument );
 		$containers = $xpath->query( 'body/div[@class="mw-parser-output"][1]' );
 		if ( !$containers->length ) {
 			// No wrapper? This could be an old parser cache entry, or perhaps the
@@ -78,10 +103,10 @@ class MakeSectionsTransform implements IMobileTransform {
 
 		$container = $containers->item( 0 );
 		$containerChild = $container->firstChild;
-		$firstHeading = reset( $headings );
-		$firstHeadingName = $firstHeading ? $firstHeading->nodeName : false;
+		$firstHeading = reset( $headingWrappers );
+		$firstHeadingName = $this->getHeadingName( $firstHeading );
 		$sectionNumber = 0;
-		$sectionBody = $this->createSectionBodyElement( $body->ownerDocument, $sectionNumber, false );
+		$sectionBody = $this->createSectionBodyElement( $ownerDocument, $sectionNumber, false );
 
 		while ( $containerChild ) {
 			$node = $containerChild;
@@ -89,20 +114,17 @@ class MakeSectionsTransform implements IMobileTransform {
 
 			// If we've found a top level heading, insert the previous section if
 			// necessary and clear the container div.
-			// Note well the use of DOMNode#nodeName here. Only DOMElement defines
-			// DOMElement#tagName.  So, if there's trailing text - represented by
-			// DOMText - then accessing #tagName will trigger an error.
-			if ( $node->nodeName === $firstHeadingName ) {
+			if ( $firstHeadingName && $this->getHeadingName( $node ) === $firstHeadingName ) {
 				// The heading we are transforming is always 1 section ahead of the
 				// section we are currently processing
 				/** @phan-suppress-next-line PhanTypeMismatchArgumentSuperType DOMNode vs. DOMElement */
-				$this->prepareHeading( $body->ownerDocument, $node, $sectionNumber + 1, $this->scriptsEnabled );
+				$this->prepareHeading( $ownerDocument, $node, $sectionNumber + 1, $this->scriptsEnabled );
 				// Insert the previous section body and reset it for the new section
 				$container->insertBefore( $sectionBody, $node );
 
 				$sectionNumber += 1;
 				$sectionBody = $this->createSectionBodyElement(
-					$body->ownerDocument,
+					$ownerDocument,
 					$sectionNumber,
 					$this->scriptsEnabled
 				);
@@ -136,10 +158,9 @@ class MakeSectionsTransform implements IMobileTransform {
 		}
 
 		// prepend indicator - this avoids a reflow by creating a placeholder for a toggling indicator
-		$indicator = $doc->createElement( 'div' );
-		$indicator->setAttribute( 'class', MobileUI::iconClass( '', 'element',
-			'indicator mw-ui-icon-small mw-ui-icon-flush-left' ) );
-		$heading->insertBefore( $indicator, $heading->firstChild );
+		$indicator = $doc->createElement( 'span' );
+		$indicator->setAttribute( 'class', 'indicator mf-icon mw-ui-icon-mf-expand mf-icon--small' );
+		$heading->insertBefore( $indicator, $heading->firstChild ?? $heading );
 	}
 
 	/**
@@ -183,8 +204,17 @@ class MakeSectionsTransform implements IMobileTransform {
 			$allTags = DOMCompat::querySelectorAll( $doc, $tagName );
 
 			foreach ( $allTags as $el ) {
-				/** @phan-suppress-next-line PhanUndeclaredMethod DOMNode vs. DOMElement */
-				if ( $el->parentNode->getAttribute( 'class' ) !== 'toctitle' ) {
+				$parent = $el->parentNode;
+				if ( !( $parent instanceof DOMElement ) ) {
+					continue;
+				}
+				// Use the `<div class="mw-heading">` wrapper if it is present. When they are required
+				// (T13555), the querySelectorAll() above can use the class and this can be removed.
+				if ( DOMCompat::getClassList( $parent )->contains( 'mw-heading' ) ) {
+					$el = $parent;
+				}
+				// This check can be removed too when we require the wrappers.
+				if ( $parent->getAttribute( 'class' ) !== 'toctitle' ) {
 					$headings[] = $el;
 				}
 			}
@@ -200,10 +230,9 @@ class MakeSectionsTransform implements IMobileTransform {
 	/**
 	 * Make it possible to open sections while JavaScript is still loading.
 	 *
-	 * @param string|null $nonce CSP nonce or null if feature is disabled
 	 * @return string The JavaScript code to add event handlers to the skin
 	 */
-	public static function interimTogglingSupport( $nonce ) {
+	public static function interimTogglingSupport() {
 		$js = <<<JAVASCRIPT
 function mfTempOpenSection( id ) {
 	var block = document.getElementById( "mf-section-" + id );
@@ -216,8 +245,7 @@ function mfTempOpenSection( id ) {
 }
 JAVASCRIPT;
 		return Html::inlineScript(
-			ResourceLoader::filter( 'minify-js', $js ),
-			$nonce
+			ResourceLoader::filter( 'minify-js', $js )
 		);
 	}
 

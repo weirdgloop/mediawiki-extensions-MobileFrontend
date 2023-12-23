@@ -21,6 +21,8 @@
 	},
 	"mobile-frontend-editor-blocked-drawer-action-randompage": "Take me to another page",
 	"mobile-frontend-editor-blocked-drawer-body-link": "See more",
+	"mobile-frontend-editor-licensing": "By publishing changes, you agree to release your contribution under the $1 {{PLURAL:$2|licence|licences}}.",
+	"mobile-frontend-editor-licensing-with-terms": "By publishing changes, you agree to the $1 and agree to release your contribution under the $2 {{PLURAL:$3|licence|licences}}.",
 	"mobile-frontend-history-no-results": "The filter did not provide any history matches.",
 	"mobile-frontend-languages-structured-overlay-all-languages-header": "Other languages",
 	"mobile-frontend-languages-structured-overlay-search-input-placeholder": "Search for a language",
@@ -37,6 +39,7 @@
 	"tag-mobile_edit": "Mobile edit",
 	"tag-advanced_mobile_edit": "Advanced mobile edit",
 	"tag-mobile_web_edit": "Mobile web edit",
+	"tag-mobile_web_edit-description": "Edit made from mobile web site",
 	"mobile-frontend-loading-message": "Loading…",
 	"mobile-frontend-amc-outreach-no-thanks": "No thanks",
 	"mobile-frontend-special-pages-pref": "Optimise and simplify special pages when on mobile (recommended)"

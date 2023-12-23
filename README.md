@@ -69,9 +69,9 @@ To run the full test suite run:
 
     npm run precommit
 
-To run only PHP tests:
+To run only PHP tests, from your MediaWiki installation path:
 
-    php ../../tests/phpunit/phpunit.php "tests/phpunit/"
+    composer phpunit:entrypoint -- extensions/MobileFrontend/tests/phpunit/
 
 To run only MobileFrontend JS tests:
 
@@ -148,6 +148,22 @@ mobile preferences option.
   ]
 ```
 
+#### $wgMFUseDesktopDiffPage
+
+Enables the desktop version of diff pages if set to `true`. If set to
+`false`, the mobile version will be enabled.
+
+* Type: `Array`
+* Default:
+```php
+  [
+    'base' => false,
+    'beta' => false,
+    // Desktop version of watchlist page when AMC is enabled
+    'amc' => false,
+  ]
+```
+
 #### $wgMFEnableJSConsoleRecruitment
 
 Controls whether a message should be logged to the console to attempt to
@@ -167,17 +183,17 @@ See: <https://www.mediawiki.org/wiki/Reading/Features/Article_lead_image>
 
 #### MFScriptPath
 
-When set will override the default search script path
-e.g.
-`https://en.wikipedia.org/w`
-will route queries (e.g. API) to English Wikipedia.
-
-Note, this will make the wiki read only. Non-anonymous HTTP requests will throw CORS error.
-This may also cause compatibility problems with other extensions.
+When set will override the default search script path.
 This should not be used in production, it is strictly for development purposes.
 
 * Type: `string`
 * Default: ''
+
+e.g $wgMFScriptPath = "https://it.wikipedia.org/w/api.php"
+
+When caching this configuration variable, to show Wikidata descriptions please
+update $wgMFEnableWikidataDescriptions and $wgMFDisplayWikibaseDescriptions as these are
+disabled by default.
 
 #### $wgMFMobileFormatterOptions
 
@@ -198,6 +214,15 @@ If set to true, styles inside MediaWiki:Mobile.css will become render blocking.
 This is intended for situations where the [TemplateStyles extension](https://www.mediawiki.org/wiki/Extension:TemplateStyles)
 cannot be used. When enabled, this may increase the time it takes for the mobile
 site to render, depending on how large MediaWiki:Mobile.css is for your wiki.
+
+* Type: `Boolean`
+* Default: `false`
+
+#### $wgMFCustomSiteModules
+
+If set to true, MediaWiki:Mobile.css will be used instead of MediaWiki:Common.css and MediaWiki:<skinname>.css for mobile views.
+
+This is intended for situations where the mobile site is on a different domain.
 
 * Type: `Boolean`
 * Default: `false`
@@ -251,21 +276,6 @@ viewport.
     'base' => true,
   ]
 ```
-
-#### $wgMFNearbyRange
-
-The range in meters that should be searched to find nearby pages on
-*Special:Nearby* (defaults to 10km).
-
-* Type: `Integer`
-* Default: `10000`
-
-#### $wgMFNearby
-
-Whether geodata related functionality should be enabled.
-
-* Type: `Boolean`
-* Default: `false`
 
 #### $wgMFSearchAPIParams
 
@@ -521,7 +531,6 @@ Set which features will use Wikibase descriptions, e.g.
 ```php
 $wgMFDisplayWikibaseDescriptions = [
   'search' => true,
-  'nearby' => true,
   'watchlist' => false,
   'tagline' => true,
 ];
@@ -532,7 +541,6 @@ $wgMFDisplayWikibaseDescriptions = [
 ```php
   [
     'search' => false,
-    'nearby' => false,
     'watchlist' => false,
     'tagline' => false,
   ]
@@ -551,30 +559,6 @@ $wgMFSpecialPageTaglines = [
 ```php
   [
     "MobileOptions" => "mobile-frontend-settings-tagline"
-  ]
-```
-
-
-#### $wgMFStripResponsiveImages
-
-Whether to strip `srcset` attributes from all images on mobile renderings. This
-is a sort of brute-force bandwidth optimization at the cost of making images
-fuzzier on most devices.
-
-* Type: `Boolean`
-* Default: `true`
-
-#### $wgMFResponsiveImageWhitelist
-
-Whitelist of source file mime types to retain srcset attributes on when using
-$wgMFStripResponsiveImages. Defaults to allow rasterized SVGs since they
-usually are diagrams that compress well and benefit from the higher resolution.
-
-* Type: `Array`
-* Default:
-```php
-  [
-    "image/svg+xml",
   ]
 ```
 

@@ -1,8 +1,9 @@
+@import 'mediawiki.skin.variables.less';
 @import '../../mobile.less/mobile.variables.less';
 
 .language-searcher {
 	.panel {
-		background-color: #fff;
+		background-color: @background-color-base;
 		padding: 0.5em;
 	}
 
@@ -29,16 +30,22 @@
 
 	.site-link-list {
 		li {
-			background-color: #fff;
+			background-color: @background-color-base;
 			padding: 0;
 		}
 
+		[ dir='ltr' ] {
+			/* @noflip */
+			text-align: left;
+		}
+
 		[ dir='rtl' ] {
+			/* @noflip */
 			text-align: right;
 		}
 
 		a {
-			border-top: solid 1px @colorGray14;
+			border-top: @border-width-base @border-style-base #eaecf0;
 			cursor: pointer;
 			display: block;
 			padding: 0.75em 1em;
@@ -53,12 +60,13 @@
 			}
 
 			.autonym {
-				color: #000;
+				// FIXME: Does this really need to be emphasized?
+				color: @color-emphasized;
 				font-weight: bold;
 			}
 
 			.title {
-				color: @colorGray7;
+				color: #72777d;
 				padding-top: 0.5em;
 			}
 		}

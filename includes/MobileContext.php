@@ -1,7 +1,9 @@
 <?php
 
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
 use MobileFrontend\Devices\DeviceDetectorService;
+use MobileFrontend\Hooks\HookRunner;
 use MobileFrontend\WMFBaseDomainExtractor;
 use Wikimedia\IPUtils;
 
@@ -15,7 +17,6 @@ class MobileContext extends ContextSource {
 	public const STOP_MOBILE_REDIRECT_COOKIE_NAME = 'stopMobileRedirect';
 	public const USEFORMAT_COOKIE_NAME = 'mf_useformat';
 	public const USER_MODE_PREFERENCE_NAME = 'mfMode';
-	public const LOGGER_CHANNEL = 'mobile';
 
 	// Keep in sync with https://wikitech.wikimedia.org/wiki/X-Analytics.
 	private const ANALYTICS_HEADER_KEY = 'mf-m';
@@ -201,7 +202,7 @@ class MobileContext extends ContextSource {
 				$this->mobileMode = $mobileAction;
 			} else {
 				$user = $this->getUser();
-				if ( $user->isAnon() ) {
+				if ( !$user->isRegistered() ) {
 					$this->loadMobileModeCookie();
 				} else {
 					$userOptionManager = MediaWikiServices::getInstance()->getUserOptionsManager();
@@ -298,8 +299,8 @@ class MobileContext extends ContextSource {
 		$this->mobileView = $this->shouldDisplayMobileViewInternal();
 		if ( $this->mobileView ) {
 			$this->redirectMobileEnabledPages();
-			$hookContainer = MediaWikiServices::getInstance()->getHookContainer();
-			$hookContainer->run( 'EnterMobileMode', [ $this ] );
+			$hookRunner = new HookRunner( MediaWikiServices::getInstance()->getHookContainer() );
+			$hookRunner->onEnterMobileMode( $this );
 		}
 		return $this->mobileView;
 	}
@@ -310,9 +311,12 @@ class MobileContext extends ContextSource {
 	private function redirectMobileEnabledPages() {
 		$request = $this->getRequest();
 		$title = $this->getTitle();
+		$services = MediaWikiServices::getInstance();
+		$featureManager = $services->getService( 'MobileFrontend.FeaturesManager' );
 
 		$redirectUrl = null;
 		if ( $request->getCheck( 'diff' ) &&
+			!$featureManager->isFeatureAvailableForCurrentUser( 'MFUseDesktopDiffPage' ) &&
 			MobileFrontendHooks::shouldMobileFormatSpecialPages( $this->getUser() )
 		) {
 			$redirectUrl = SpecialMobileDiff::getMobileUrlFromDesktop( $request );
@@ -434,12 +438,10 @@ class MobileContext extends ContextSource {
 		$stopMobileRedirectCookieSecureValue =
 			$this->config->get( 'MFStopMobileRedirectCookieSecureValue' );
 
-		if ( $expiry === null ) {
-			$expiry = $this->getUseFormatCookieExpiry();
-		}
-
 		$this->getRequest()->response()->setCookie(
-			self::STOP_MOBILE_REDIRECT_COOKIE_NAME, 'true', $expiry,
+			self::STOP_MOBILE_REDIRECT_COOKIE_NAME,
+			'true',
+			$expiry ?? $this->getUseFormatCookieExpiry(),
 			[
 				'domain' => $this->getStopMobileRedirectCookieDomain(),
 				'prefix' => '',
@@ -471,8 +473,6 @@ class MobileContext extends ContextSource {
 	}
 
 	/**
-	 * Get the useformat cookie
-	 *
 	 * This cookie can determine whether or not a user should see the mobile
 	 * version of a page.
 	 *
@@ -523,13 +523,10 @@ class MobileContext extends ContextSource {
 	 * @param int|null $expiry Expiration of cookie
 	 */
 	public function setUseFormatCookie( $cookieFormat = 'true', $expiry = null ) {
-		if ( $expiry === null ) {
-			$expiry = $this->getUseFormatCookieExpiry();
-		}
 		$this->getRequest()->response()->setCookie(
 			self::USEFORMAT_COOKIE_NAME,
 			$cookieFormat,
-			$expiry,
+			$expiry ?? $this->getUseFormatCookieExpiry(),
 			[
 				'prefix' => '',
 				'httpOnly' => true,
@@ -628,10 +625,9 @@ class MobileContext extends ContextSource {
 	public function getMobileUrl( $url, $forceHttps = false ) {
 		if ( $this->shouldDisplayMobileView() ) {
 			$subdomainTokenReplacement = null;
-			$hookContainer = MediaWikiServices::getInstance()->getHookContainer();
-			if ( $hookContainer->run( 'GetMobileUrl', [ &$subdomainTokenReplacement, $this ] ) ) {
-				// @phan-suppress-next-line PhanRedundantCondition May set by hook
-				if ( !empty( $subdomainTokenReplacement ) ) {
+			$hookRunner = new HookRunner( MediaWikiServices::getInstance()->getHookContainer() );
+			if ( $hookRunner->onGetMobileUrl( $subdomainTokenReplacement, $this ) ) {
+				if ( $subdomainTokenReplacement !== null ) {
 					$mobileUrlHostTemplate = $this->parseMobileUrlTemplate( 'host' );
 					$mobileToken = $this->getMobileHostToken( $mobileUrlHostTemplate );
 					$this->mobileUrlTemplate = str_replace(
@@ -713,13 +709,11 @@ class MobileContext extends ContextSource {
 
 		foreach ( $templateHostParts as $key => $templateHostPart ) {
 			if ( strstr( $templateHostPart, '%h' ) ) {
-				$parsedHostPartKey = substr( $templateHostPart, 2 );
-				// @phan-suppress-next-line PhanImpossibleTypeComparisonInLoop
+				$parsedHostPartKey = (int)substr( $templateHostPart, 2 );
 				if ( !array_key_exists( $parsedHostPartKey, $parsedHostParts ) ) {
 					// invalid pattern for this host, ignore
 					return;
 				}
-				// @phan-suppress-next-line PhanTypeMismatchDimFetch
 				$targetHostParts[$key] = $parsedHostParts[$parsedHostPartKey];
 			} elseif ( isset( $parsedHostParts[$key] )
 				&& $templateHostPart == $parsedHostParts[$key] ) {
@@ -999,38 +993,7 @@ class MobileContext extends ContextSource {
 	}
 
 	/**
-	 * Process-local override for MFStripResponsiveImages, used by
-	 * the mobileview API request.
-	 * @var bool|null
-	 */
-	private $stripResponsiveImagesOverride = null;
-
-	/**
-	 * Should image thumbnails in pages remove the high-density additions
-	 * during this request?
-	 *
-	 * @return bool
-	 */
-	public function shouldStripResponsiveImages() {
-		if ( $this->stripResponsiveImagesOverride === null ) {
-			return $this->shouldDisplayMobileView()
-				&& $this->config->get( 'MFStripResponsiveImages' );
-		} else {
-			return $this->stripResponsiveImagesOverride;
-		}
-	}
-
-	/**
-	 * Config override for responsive image strip mode.
-	 *
-	 * @param bool $val New value
-	 */
-	public function setStripResponsiveImages( $val ) {
-		$this->stripResponsiveImagesOverride = $val;
-	}
-
-	/**
-	 * Gets whether Wikibase descriptions should be shown in search results, including nearby search,
+	 * Gets whether Wikibase descriptions should be shown in search results,
 	 * and watchlists; or as taglines on article pages.
 	 * Doesn't take into account whether the wikidata descriptions
 	 * feature has been enabled.

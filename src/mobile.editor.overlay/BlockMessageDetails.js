@@ -125,7 +125,7 @@ class BlockMessageDetails extends View {
 		);
 		this.$el.find( '.block-message-icon' ).prepend(
 			( new Icon( {
-				name: 'block-destructive',
+				icon: 'block-destructive',
 				additionalClassNames: 'mw-ui-icon-flush-top'
 			} ) ).$el
 		);

@@ -1,6 +1,8 @@
 <?php
 
+use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Request\FauxRequest;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserOptionsLookup;
 use Psr\Container\ContainerInterface;
@@ -92,13 +94,13 @@ class MobileFrontendHooksTest extends MediaWikiIntegrationTestCase {
 		$mfEnableXAnalyticsLogging, $mfAutoDetectMobileView, $mfVaryOnUA, $mfXAnalyticsItems,
 		$isAlternateCanonical, $isXAnalytics, $mfVaryHeaderSet
 	) {
-		$this->setMwGlobals( [
-			'wgMFEnableManifest' => false,
-			'wgMobileUrlTemplate' => $mobileUrlTemplate,
-			'wgMFNoindexPages' => $mfNoindexPages,
-			'wgMFEnableXAnalyticsLogging' => $mfEnableXAnalyticsLogging,
-			'wgMFAutodetectMobileView' => $mfAutoDetectMobileView,
-			'wgMFVaryOnUA' => $mfVaryOnUA,
+		$this->overrideConfigValues( [
+			'MFEnableManifest' => false,
+			'MobileUrlTemplate' => $mobileUrlTemplate,
+			'MFNoindexPages' => $mfNoindexPages,
+			'MFEnableXAnalyticsLogging' => $mfEnableXAnalyticsLogging,
+			'MFAutodetectMobileView' => $mfAutoDetectMobileView,
+			'MFVaryOnUA' => $mfVaryOnUA,
 		] );
 
 		// test with forced mobile view
@@ -107,7 +109,7 @@ class MobileFrontendHooksTest extends MediaWikiIntegrationTestCase {
 		$skin = $param['sk'];
 
 		// run the test
-		MobileFrontendHooks::onBeforePageDisplay( $out, $skin );
+		( new MobileFrontendHooks )->onBeforePageDisplay( $out, $skin );
 
 		// test, if alternate or canonical link is added, but not both
 		$links = $out->getLinkTags();
@@ -134,7 +136,7 @@ class MobileFrontendHooksTest extends MediaWikiIntegrationTestCase {
 		$skin = $param['sk'];
 
 		// run the test
-		MobileFrontendHooks::onBeforePageDisplay( $out, $skin );
+		( new MobileFrontendHooks )->onBeforePageDisplay( $out, $skin );
 		// test, if alternate or canonical link is added, but not both
 		$links = $out->getLinkTags();
 		$this->assertCount( $isAlternateCanonical, $links,
@@ -172,14 +174,11 @@ class MobileFrontendHooksTest extends MediaWikiIntegrationTestCase {
 		$mainContext = new DerivativeContext( RequestContext::getMain() );
 		$out = new OutputPage( $context );
 		$skin = new SkinTemplate();
-		if ( $title === null ) {
-			$title = Title::newMainPage();
-		}
 		// create a FauxRequest to use instead of a WebRequest object (FauxRequest forces
 		// the creation of a FauxResponse, which allows to investigate sent header values)
 		$request = new FauxRequest();
 		$mainContext->setRequest( $request );
-		$mainContext->setTitle( $title );
+		$mainContext->setTitle( $title ?? Title::newMainPage() );
 		$skin->setContext( $mainContext );
 		$mainContext->setOutput( $out );
 		$context->setContext( $mainContext );
@@ -198,7 +197,7 @@ class MobileFrontendHooksTest extends MediaWikiIntegrationTestCase {
 	/**
 	 * Dataprovider for testOnBeforePageDisplay
 	 */
-	public function onBeforePageDisplayDataProvider() {
+	public static function onBeforePageDisplayDataProvider() {
 		return [
 			// wgMobileUrlTemplate, wgMFNoindexPages, wgMFEnableXAnalyticsLogging, wgMFAutodetectMobileView,
 			// wgMFVaryOnUA, XanalyticsItems, alternate & canonical link, XAnalytics, Vary header User-Agent
@@ -222,12 +221,12 @@ class MobileFrontendHooksTest extends MediaWikiIntegrationTestCase {
 	 * @covers MobileFrontendHooks::onTitleSquidURLs
 	 */
 	public function testOnTitleSquidURLs() {
-		$this->setMwGlobals( [
-			'wgMobileUrlTemplate' => '%h0.m.%h1.%h2',
-			'wgServer' => 'http://en.wikipedia.org',
-			'wgArticlePath' => '/wiki/$1',
-			'wgScriptPath' => '/w',
-			'wgScript' => '/w/index.php',
+		$this->overrideConfigValues( [
+			'MobileUrlTemplate' => '%h0.m.%h1.%h2',
+			MainConfigNames::Server => 'http://en.wikipedia.org',
+			MainConfigNames::ArticlePath => '/wiki/$1',
+			MainConfigNames::ScriptPath => '/w',
+			MainConfigNames::Script => '/w/index.php',
 		] );
 		$title = Title::newFromText( 'PurgeTest' );
 
@@ -242,32 +241,6 @@ class MobileFrontendHooksTest extends MediaWikiIntegrationTestCase {
 		];
 
 		$this->assertArrayEquals( $expected, $urls );
-	}
-
-	/**
-	 * @covers MobileFrontendHooks::onPageRenderingHash
-	 * @dataProvider provideOnPageRenderingHash
-	 */
-	public function testOnPageRenderingHash(
-		$shouldConfstrChange,
-		$stripResponsiveImages
-	) {
-		/** @var MobileContext $context */
-		$context = MediaWikiServices::getInstance()->getService( 'MobileFrontend.Context' );
-		$context->setStripResponsiveImages( $stripResponsiveImages );
-
-		$expectedConfstr = $confstr = '';
-
-		if ( $shouldConfstrChange ) {
-			$expectedConfstr = '!responsiveimages=0';
-		}
-
-		$user = new User();
-		$forOptions = [];
-
-		MobileFrontendHooks::onPageRenderingHash( $confstr, $user, $forOptions );
-
-		$this->assertSame( $expectedConfstr, $confstr );
 	}
 
 	public static function provideShouldMobileFormatSpecialPages() {
@@ -319,104 +292,22 @@ class MobileFrontendHooksTest extends MediaWikiIntegrationTestCase {
 		$enabled,
 		$userpref = false
 	) {
-		// set globals
-		$this->setMwGlobals( [
-			'wgMFEnableMobilePreferences' => $enabled,
-		] );
+		$this->overrideConfigValue( 'MFEnableMobilePreferences', $enabled );
 
-		$user = $isAnon ? new User() : $this->getMutableTestUser()->getUser();
-		if ( !$isAnon && $userpref ) {
-			$userOptionsManager = MediaWikiServices::getInstance()->getUserOptionsManager();
-			$userOptionsManager->setOption(
-				$user,
-				MobileFrontendHooks::MOBILE_PREFERENCES_SPECIAL_PAGES,
-				true
-			);
+		$user = $this->createMock( User::class );
+		$user->method( 'isRegistered' )->willReturn( !$isAnon );
+		$user->method( 'isSafeToLoad' )->willReturn( true );
+		if ( !$isAnon ) {
+			$userOptLookup = $this->createMock( UserOptionsLookup::class );
+			$userOptLookup->method( 'getOption' )
+				->with( $user, MobileFrontendHooks::MOBILE_PREFERENCES_SPECIAL_PAGES )
+				->willReturn( $userpref ?: $this->returnArgument( 2 ) );
+			$this->setService( 'UserOptionsLookup', $userOptLookup );
 		}
 		$this->assertSame(
 			$expected,
 			MobileFrontendHooks::shouldMobileFormatSpecialPages( $user )
 		);
-	}
-
-	public static function provideOnPageRenderingHash() {
-		return [
-			[ true, true ],
-			[ false, false ],
-		];
-	}
-
-	/**
-	 * @covers MobileFrontendHooks::onPageRenderingHash
-	 * @dataProvider provideDoThumbnailBeforeProduceHTML
-	 */
-	public function testDoThumbnailBeforeProduceHTML(
-		$expected,
-		$mimeType,
-		$stripResponsiveImages = true
-	) {
-		$file = $mimeType ? $this->factoryFile( $mimeType ) : null;
-		$thumbnail = new ThumbnailImage(
-			$file,
-
-			// The following is stub data that stops `ThumbnailImage#__construct`,
-			// triggering a warning.
-			'/foo.svg',
-			false,
-			[
-				'width' => 375,
-				'height' => 667
-			]
-		);
-
-		MediaWikiServices::getInstance()->getService( 'MobileFrontend.Context' )
-			->setStripResponsiveImages( $stripResponsiveImages );
-
-		// We're only asserting that the `srcset` attribute is unset.
-		$attribs = [ 'srcset' => 'bar' ];
-
-		$linkAttribs = [];
-
-		MobileFrontendHooks::onThumbnailBeforeProduceHTML(
-			$thumbnail,
-			$attribs,
-			$linkAttribs
-		);
-
-		$this->assertSame( $expected, array_key_exists( 'srcset', $attribs ) );
-	}
-
-	/**
-	 * Creates an instance of `File` which has the given MIME type.
-	 *
-	 * @param string $mimeType
-	 * @return File
-	 */
-	private function factoryFile( $mimeType ) {
-		$file = $this->getMockBuilder( File::class )
-			->disableOriginalConstructor()
-			->getMock();
-
-		$file->method( 'getMimeType' )
-			->willReturn( $mimeType );
-
-		return $file;
-	}
-
-	public static function provideDoThumbnailBeforeProduceHTML() {
-		return [
-			[ false, 'image/jpg' ],
-
-			// `ThumbnailImage#getFile` can return `null`.
-			[ false, null ],
-
-			// It handles an image with a whitelisted MIME type.
-			[ true, 'image/svg+xml' ],
-
-			// It handles the stripping of responsive image variants from the parser
-			// output being disabled.
-			[ true, 'image/jpg', false ],
-		];
 	}
 
 	/**
@@ -461,24 +352,24 @@ class MobileFrontendHooksTest extends MediaWikiIntegrationTestCase {
 			);
 		}
 
-		$config = $this->createMock( Config::class );
-		$config->method( 'get' )->willReturnMap( [
-			[ 'DefaultMobileSkin', $fakeMobileSkin ],
-			[ 'DefaultSkin', $fakeDefaultSkin ],
+		$config = new HashConfig( [
+			'DefaultMobileSkin' => $fakeMobileSkin,
+			'DefaultSkin' => $fakeDefaultSkin,
+			'MFEnableMobilePreferences' => false,
 		] );
 
 		$this->setService( 'SkinFactory', $skinFactory );
 		$this->setService( 'MobileFrontend.Config', $config );
 		$this->setService( 'MobileFrontend.Context', $mobileContext );
 
-		/**	@var Skin $skin */
+		/** @var Skin $skin */
 		$skin = null;
-		MobileFrontendHooks::onRequestContextCreateSkin( $context, $skin );
+		( new MobileFrontendHooks )->onRequestContextCreateSkin( $context, $skin );
 
 		self::assertSame( $expectedSkin, $skin->getSkinName() );
 	}
 
-	public function provideDefaultMobileSkin(): array {
+	public static function provideDefaultMobileSkin(): array {
 		return [
 			[ 'mobile-skin', 'default-skin', 'mobile-skin' ],
 			[ null, 'default-skin', 'default-skin' ]

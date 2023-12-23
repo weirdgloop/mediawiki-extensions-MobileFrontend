@@ -14,7 +14,7 @@ var
  * @class SearchOverlay
  * @extends Overlay
  * @uses SearchGateway
- * @uses Icon
+ * @uses IconButton
  *
  * @param {Object} params Configuration options
  * @param {string} params.placeholderMsg Search input placeholder text.
@@ -29,7 +29,8 @@ function SearchOverlay( params ) {
 			function ( query ) {
 				this.performSearch( query );
 			}.bind( this ),
-			params.defaultSearchPage || ''
+			params.defaultSearchPage || '',
+			params.autocapitalize
 		),
 		options = util.extend( true, {
 			headerChrome: true,
@@ -142,10 +143,10 @@ mfExtend( SearchOverlay, Overlay, {
 		this.router.back().then( function () {
 			// T308288: Appends the current search id as a url param on clickthroughs
 			if ( this.currentSearchId ) {
-				var clickUri = new mw.Uri( location.href );
-				clickUri.query.searchToken = this.currentSearchId;
+				var clickUrl = new URL( location.href );
+				clickUrl.searchParams.set( 'searchToken', this.currentSearchId );
 				self.router.navigateTo( document.title, {
-					path: clickUri.toString(),
+					path: clickUrl.toString(),
 					useReplaceState: true
 				} );
 				this.currentSearchId = null;

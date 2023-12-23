@@ -1,15 +1,16 @@
 module.exports = {
 	defaultURLs: `
 		<div class=" drawer drawer-container__drawer position-fixed">
-			<div
-				class=" mw-ui-icon mw-ui-icon-element mw-ui-icon-mf-expand cancel mw-ui-button mw-ui-quiet "
-			> </div>
+			<button type="button" class="cdx-button cdx-button--size-large cdx-button--weight-quiet cdx-button--icon-only cancel">
+				<span class="mf-icon mw-ui-icon-mf-expand "> </span>
+				<span>mobile-frontend-drawer-arrow-label</span>
+			</button>
 			<p> </p>
-			<a href=" logIn " class=" mw-ui-button mw-ui-progressive ">
-				Log in
+			<a type="button" class="cdx-button cdx-button--fake-button cdx-button--fake-button--enabled cdx-button--size-medium cdx-button--weight-primary cdx-button--action-progressive " href="logIn">
+				<span>Log in</span>
 			</a>
 			<div class="cta-drawer__anchors">
-				<a href=" signUp " class=" mw-ui-anchor mw-ui-progressive ">
+				<a href="signUp" class="mw-mf-anchor mw-mf-anchor-progressive ">
 					Sign up
 				</a>
 			</div>
@@ -17,15 +18,16 @@ module.exports = {
 	`,
 	overrideURLs: `
 		<div class=" drawer drawer-container__drawer position-fixed">
-			<div
-			class=" mw-ui-icon mw-ui-icon-element mw-ui-icon-mf-expand cancel mw-ui-button mw-ui-quiet "
-			> </div>
+			<button type="button" class="cdx-button cdx-button--size-large cdx-button--weight-quiet cdx-button--icon-only cancel">
+				<span class="mf-icon mw-ui-icon-mf-expand "> </span>
+				<span>mobile-frontend-drawer-arrow-label</span>
+			</button>
 			<p> </p>
-			<a href=" customLogIn " class=" mw-ui-button mw-ui-progressive ">
-				custom log in
+			<a type="button" class="cdx-button cdx-button--fake-button cdx-button--fake-button--enabled cdx-button--size-medium cdx-button--weight-primary cdx-button--action-progressive " href="customLogIn">
+				<span>custom log in</span>
 			</a>
 			<div class="cta-drawer__anchors">
-				<a href=" customSignUp " class=" mw-ui-anchor mw-ui-progressive ">
+				<a href="customSignUp" class="mw-mf-anchor mw-mf-anchor-progressive ">
 					custom sign up
 				</a>
 			</div>

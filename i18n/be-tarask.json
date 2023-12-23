@@ -2,12 +2,12 @@
 	"@metadata": {
 		"authors": [
 			"EugeneZelenko",
+			"Jarash",
 			"Jim-by",
 			"Red Winged Duck",
 			"Renessaince",
 			"Wizardist",
-			"Zedlik",
-			"Jarash"
+			"Zedlik"
 		]
 	},
 	"abusefilter-edit-builder-vars-user-mobile": "Ці рэдагуе ўдзельнік праз мабільны інтэрфэйс",
@@ -63,15 +63,6 @@
 	"mobile-frontend-last-modified-with-user-just-now": "[$3 Апошні раз {{GENDER:$1|рэдагавалася}} толькі што] {{PLURAL:$4|[$5 $2]|0=ананімным удзельнікам}}",
 	"mobile-frontend-main-menu-settings-heading": "Налады",
 	"mobile-frontend-missing-image": "Выява",
-	"mobile-frontend-nearby-distance": "{{PLURAL:$1|$1 км}}",
-	"mobile-frontend-nearby-distance-meters": "{{PLURAL:$1|$1 м}}",
-	"mobile-frontend-nearby-error": "{{SITENAME}} Побач спазнаў праблемы.",
-	"mobile-frontend-nearby-error-guidance": "Паспрабуйце абнавіць вашае месцазнаходжаньне.",
-	"mobile-frontend-nearby-noresults": "Нешта ціха… Мы не знайшлі старонкі на тэмы побач з вамі.",
-	"mobile-frontend-nearby-noresults-guidance": "Паспрабуйце стварыць новую старонку або дадаць каардынаты да існай",
-	"mobile-frontend-nearby-requirements": "Даруйце! Ваш браўзэр не падтрымлівае функцыю {{SITENAME}} Побач.",
-	"mobile-frontend-nearby-requirements-guidance": "Паспрабуйце іншы браўзэр або ўключыце JavaScript, калі ён выключаны.",
-	"mobile-frontend-nearby-title": "Побач",
 	"mobile-frontend-news-items": "Навіны",
 	"mobile-frontend-opt-in-explain": "{{SITENAME}} βeta — гэта магчымасьць для вас паспрабаваць экспэрымэнтальныя функцыі і пакінуць нам свае каштоўныя водгукі",
 	"mobile-frontend-privacy-link-text": "Прыватнасьць",
@@ -92,7 +83,6 @@
 	"mobile-frontend-watchlist-filter-talk": "Абмеркаваньні",
 	"mobile-frontend-watchlist-more": "болей",
 	"mobile-frontend-watchlist-removed": "$1 выдалена са сьпісу назіраньня",
-	"nearby": "Старонкі на тэмы побач з вамі",
 	"tag-mobile_edit": "Рэдагаваньне з мабільнай прылады",
 	"tag-mobile_edit-description": "Рэдагаваньні зробленыя з мабільных прыладаў",
 	"tag-advanced_mobile_edit-description": "Рэдагаваньні зробленыя ўдзельнікам у пашыраным рэжыме",

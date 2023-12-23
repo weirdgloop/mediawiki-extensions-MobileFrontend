@@ -1,16 +1,15 @@
-
-@import 'mediawiki.ui/variables.less';
+@import 'mediawiki.skin.variables.less';
 
 .client-js {
 	.collapsible-block:not( .collapsible-block-js ) {
 		display: none;
 	}
+}
 
-	// Set dimensions of toggling indicators before JS loads, to avoid content shifting
-	.section-heading .indicator {
-		padding: 8px;
-		border: 0;
-	}
+.section-heading .indicator {
+	width: 16px;
+	height: 16px;
+	margin-right: 6px;
 }
 
 .client-nojs {
@@ -48,7 +47,7 @@ ul.footer-places li {
 }
 
 /* stylelint-disable-next-line selector-max-id */
-#footer-places-desktop-toggle:after {
+#footer-places-desktop-toggle::after {
 	content: '' !important;
 }
 // END FOOTER RULES

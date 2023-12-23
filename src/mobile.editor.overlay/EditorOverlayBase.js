@@ -3,10 +3,9 @@ var Overlay = require( '../mobile.startup/Overlay' ),
 	util = require( '../mobile.startup/util' ),
 	parseBlockInfo = require( './parseBlockInfo' ),
 	headers = require( '../mobile.startup/headers' ),
-	PageGateway = require( '../mobile.startup/PageGateway' ),
 	icons = require( '../mobile.startup/icons' ),
 	Button = require( '../mobile.startup/Button' ),
-	Icon = require( '../mobile.startup/Icon' ),
+	IconButton = require( '../mobile.startup/IconButton' ),
 	mfExtend = require( '../mobile.startup/mfExtend' ),
 	blockMessageDrawer = require( './blockMessageDrawer' ),
 	MessageBox = require( '../mobile.startup/MessageBox' ),
@@ -53,10 +52,9 @@ EditVeTool.prototype.onUpdateState = function () {
  *
  * @class EditorOverlayBase
  * @extends Overlay
- * @uses Icon
+ * @uses IconButton
  * @uses user
  * @param {Object} params Configuration options
- * @param {number|null} params.editCount of user
  * @param {boolean} params.editSwitcher whether possible to switch mode in header
  * @param {boolean} params.hasToolbar whether the editor has a toolbar
  */
@@ -90,12 +88,8 @@ function EditorOverlayBase( params ) {
 	if ( mw.config.get( 'wgNamespaceNumber' ) !== 0 ) {
 		options.summaryRequestMsg = mw.msg( 'mobile-frontend-editor-summary' );
 	}
-	this.pageGateway = new PageGateway( options.api );
-	this.editCount = options.editCount;
 	this.isNewPage = options.isNewPage;
-	this.isNewEditor = options.editCount === 0;
 	this.sectionId = options.sectionId;
-	this.sessionId = options.sessionId;
 	this.overlayManager = options.overlayManager;
 
 	Overlay.call( this, options );
@@ -154,14 +148,16 @@ mfExtend( EditorOverlayBase, Overlay, {
 		<div class="save-panel panel hideable hidden">
 			<div id="error-notice-container"></div>
 			<h2 class="summary-request">{{{summaryRequestMsg}}}</h2>
-			<textarea rows="2" class="mw-ui-input summary" placeholder="{{summaryMsg}}"></textarea>
+			<div class="summary-input"></div>
 			{{#licenseMsg}}<div class="license">{{{licenseMsg}}}</div>{{/licenseMsg}}
 		</div>
 		<div class="captcha-panel panel hideable hidden">
 			<div class="captcha-box">
 				<img id="image" src="">
 				<div id="question"></div>
-				<input class="captcha-word mw-ui-input" placeholder="{{captchaMsg}}" />
+				<div class="cdx-text-input">
+					<input class="captcha-word cdx-text-input__input" placeholder="{{captchaMsg}}" />
+				</div>
 			</div>
 		</div>
 	</div>
@@ -184,11 +180,9 @@ mfExtend( EditorOverlayBase, Overlay, {
 	 * @param {Object} data
 	 */
 	log: function ( data ) {
-		mw.track( 'mf.schemaEditAttemptStep', util.extend( data, {
+		mw.track( 'editAttemptStep', util.extend( data, {
 			// eslint-disable-next-line camelcase
-			editor_interface: this.editor,
-			// eslint-disable-next-line camelcase
-			editing_session_id: this.sessionId
+			editor_interface: this.editor
 		} ) );
 	},
 	/**
@@ -199,11 +193,9 @@ mfExtend( EditorOverlayBase, Overlay, {
 	 * @param {Object} data
 	 */
 	logFeatureUse: function ( data ) {
-		mw.track( 'mf.schemaVisualEditorFeatureUse', util.extend( data, {
+		mw.track( 'visualEditorFeatureUse', util.extend( data, {
 			// eslint-disable-next-line camelcase
-			editor_interface: this.editor,
-			// eslint-disable-next-line camelcase
-			editing_session_id: this.sessionId
+			editor_interface: this.editor
 		} ) );
 	},
 
@@ -230,41 +222,27 @@ mfExtend( EditorOverlayBase, Overlay, {
 	 *
 	 * @memberof EditorOverlayBase
 	 * @instance
-	 * @param {number|null} newRevId ID of the newly created revision, or null if it was a null
-	 *  edit.
+	 * @param {number|null} newRevId ID of the newly created revision, or null if it was a null edit.
+	 * @param {string} [redirectUrl] URL to redirect to, if different than the current URL.
+	 * @param {boolean} [tempUserCreated] Whether a temporary user was created
 	 */
-	onSaveComplete: function ( newRevId ) {
-		var msg,
-			title = this.options.title,
+	onSaveComplete: function ( newRevId, redirectUrl, tempUserCreated ) {
+		var
 			self = this;
 
 		this.saved = true;
 
-		// FIXME: use generic method for following 3 lines
-		this.pageGateway.invalidatePage( title );
-
-		if ( this.isNewPage ) {
-			msg = mw.msg( 'mobile-frontend-editor-success-new-page' );
-		} else if ( this.isNewEditor ) {
-			msg = mw.msg( 'mobile-frontend-editor-success-landmark-1' );
-		} else {
-			msg = mw.msg( 'mobile-frontend-editor-success' );
+		if ( newRevId ) {
+			var action;
+			if ( self.isNewPage ) {
+				action = 'created';
+			} else if ( self.options.oldId ) {
+				action = 'restored';
+			} else {
+				action = 'saved';
+			}
+			self.showSaveCompleteMsg( action, tempUserCreated );
 		}
-
-		if ( !mw.config.get( 'wgPostEditConfirmationDisabled' ) ) {
-			this.showSaveCompleteMsg( msg );
-		}
-
-		/**
-		 * Fired after an edit was successfully saved, like postEdit in MediaWiki core.
-		 *
-		 * @event postEditMobile
-		 * @member mw.hook
-		 * @param {Object} data
-		 * @param {number|null} data.newRevId (since MW 1.37) ID of the newly created revision,
-		 *  or null if it was a null edit.
-		 */
-		mw.hook( 'postEditMobile' ).fire( { newRevId: newRevId } );
 
 		// Ensure we don't lose this event when logging
 		this.log( {
@@ -275,7 +253,10 @@ mfExtend( EditorOverlayBase, Overlay, {
 		setTimeout( function () {
 			// Wait for any other teardown navigation to happen (e.g. router.back())
 			// before setting our final location.
-			if ( self.sectionId ) {
+			if ( redirectUrl ) {
+				// eslint-disable-next-line no-restricted-properties
+				window.location.href = redirectUrl;
+			} else if ( self.sectionId ) {
 				// Ideally we'd want to do this via replaceState (see T189173)
 				// eslint-disable-next-line no-restricted-properties
 				window.location.hash = '#' + self.sectionId;
@@ -295,10 +276,11 @@ mfExtend( EditorOverlayBase, Overlay, {
 	 * @inheritdoc
 	 * @memberof VisualEditorOverlay
 	 * @instance
-	 * @param {string} msg Message
+	 * @param {string} action One of 'saved', 'created', 'restored'
+	 * @param {boolean} [tempUserCreated] Whether a temporary user was created
 	 */
-	showSaveCompleteMsg: function ( msg ) {
-		mw.notify( msg, { type: 'success' } );
+	showSaveCompleteMsg: function ( action, tempUserCreated ) {
+		mw.loader.require( 'mediawiki.action.view.postEdit' ).fireHook( action, tempUserCreated );
 	},
 	/**
 	 * Executed when page save fails. Handles logging the error. Subclasses
@@ -422,9 +404,11 @@ mfExtend( EditorOverlayBase, Overlay, {
 					editingMsg: options.editingMsg
 				} ),
 				options.readOnly ? [] : [
-					new Icon( {
+					new IconButton( {
 						tagName: 'button',
-						name: 'next-invert',
+						action: 'progressive',
+						weight: 'primary',
+						icon: 'next-invert',
 						additionalClassNames: 'continue',
 						disabled: true,
 						title: options.continueMsg
@@ -437,6 +421,7 @@ mfExtend( EditorOverlayBase, Overlay, {
 			headers.savingHeader( mw.msg( 'mobile-frontend-editor-wait' ) )
 		];
 	},
+
 	/**
 	 * @inheritdoc
 	 * @memberof EditorOverlayBase
@@ -446,7 +431,6 @@ mfExtend( EditorOverlayBase, Overlay, {
 		this.$errorNoticeContainer = this.$el.find( '#error-notice-container' );
 
 		Overlay.prototype.postRender.apply( this );
-
 		this.showHidden( '.initial-header' );
 	},
 	show: function () {
@@ -546,6 +530,25 @@ mfExtend( EditorOverlayBase, Overlay, {
 		}
 		this.onExit();
 		exit();
+		if ( mw.config.get( 'wgAction' ) === 'edit' ) {
+			// We got into the overlay via directly visiting an action=edit
+			// URL, which has been taken over. As such, depending on
+			// how we got here, the normal overlay process isn't going to
+			// produce the correct result.
+			setTimeout( function () {
+				// This needs to happen after the overlay-hide has completed
+				// so we have access to the "real" URL, and `exit`
+				// unfortunately doesn't expose a promise for this. There's
+				// several setTimeouts within the hide, so we're just going
+				// to use a long-enough setTimeout of our own to skip those.
+				if ( !mw.util.getParamValue( 'veaction' ) && !mw.util.getParamValue( 'action' ) ) {
+					// Use reload if possible, to emulate having gone back
+					location.reload();
+				} else {
+					location.href = mw.util.getUrl();
+				}
+			}, 100 );
+		}
 	},
 	onExit: function () {
 		// May not be set if overlay has not been previously shown
@@ -564,10 +567,22 @@ mfExtend( EditorOverlayBase, Overlay, {
 	 */
 	createAnonWarning: function ( options ) {
 		var $actions = $( '<div>' ).addClass( 'actions' ),
+			// Use MediaWiki ResourceLoader require(), not Webpack require()
+			contLangMessages = (
+				// eslint-disable-next-line camelcase
+				typeof __non_webpack_require__ !== 'undefined' ?
+					// eslint-disable-next-line no-undef
+					__non_webpack_require__( './contLangMessages.json' ) :
+					{}
+			),
+			msg = this.gateway.wouldautocreate ?
+				'mobile-frontend-editor-autocreatewarning' :
+				'mobile-frontend-editor-anonwarning',
 			$anonWarning = $( '<div>' ).addClass( 'anonwarning content' ).append(
 				new MessageBox( {
 					className: 'mw-message-box-notice anon-msg',
-					msg: mw.msg( 'mobile-frontend-editor-anonwarning' )
+					// eslint-disable-next-line mediawiki/msg-doc
+					msg: mw.message( msg, contLangMessages[ 'tempuser-helppage' ] ).parse()
 				} ).$el,
 				$actions
 			),
@@ -640,11 +655,9 @@ mfExtend( EditorOverlayBase, Overlay, {
 			titleObj: this.options.titleObj,
 			isAnon: this.options.isAnon,
 			isNewPage: this.options.isNewPage,
-			editCount: this.options.editCount,
 			oldId: this.options.oldId,
 			contentLang: this.options.contentLang,
 			contentDir: this.options.contentDir,
-			sessionId: this.options.sessionId,
 			sectionId: this.options.sectionId
 		};
 	},
@@ -674,6 +687,56 @@ mfExtend( EditorOverlayBase, Overlay, {
 				return util.Deferred().reject( message );
 			}
 			return result;
+		} );
+	},
+	showEditNotices: function () {
+		var overlay = this;
+		if ( !mw.config.get( 'wgMFShowEditNotices' ) || mw.config.get( 'wgMFEditNoticesFeatureConflict' ) ) {
+			return;
+		}
+		this.getLoadingPromise().then( function ( data ) {
+			if ( data.notices ) {
+				var editNotices = Object.keys( data.notices ).filter( function ( key ) {
+					if ( key.indexOf( 'editnotice' ) !== 0 ) {
+						return false;
+					}
+					if ( key === 'editnotice-notext' ) {
+						// This notice is shown on pages which don't have any
+						// other edit notices. It's blank by default, but
+						// some wikis have it template-generated and hidden
+						// by CSS. It's filtered out from VE's API response,
+						// but not from the source mode.
+						return false;
+					}
+					// The contents of an edit notice is unlikely to change in the 24 hour
+					// expiry window, so just record that a notice with this key has been shown.
+					// If a cheap hashing function was available in core (or the API provided
+					// as hash) it could be used here instead.
+					var storageKey = 'mf-editnotices/' + mw.config.get( 'wgPageName' ) + '#' + key;
+					if ( mw.storage.get( storageKey ) ) {
+						return false;
+					}
+					mw.storage.set( storageKey, '1', 24 * 60 * 60 );
+					return true;
+				} );
+
+				if ( editNotices.length ) {
+					mw.loader.using( 'oojs-ui-windows' ).then( function () {
+						var $container = $( '<div>' ).addClass( 'editor-overlay-editNotices' );
+						editNotices.forEach( function ( key ) {
+							var $notice = $( '<div>' ).append( data.notices[ key ] );
+							$notice.addClass( 'editor-overlay-editNotice' );
+							$container.append( $notice );
+						} );
+						OO.ui.alert( $container );
+
+						overlay.logFeatureUse( {
+							feature: 'notices',
+							action: 'show'
+						} );
+					} );
+				}
+			}
 		} );
 	},
 	/**

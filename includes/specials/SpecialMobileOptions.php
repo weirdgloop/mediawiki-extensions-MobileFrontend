@@ -140,12 +140,55 @@ class SpecialMobileOptions extends MobileSpecialPage {
 	}
 
 	/**
+	 * Builds mobile user preferences field.
+	 * @return \OOUI\FieldLayout
+	 * @throws \OOUI\Exception
+	 */
+	private function buildMobileUserPreferences() {
+		$spacer = new OOUI\LabelWidget( [
+			'name' => 'mobile_preference_spacer',
+		] );
+		$userPreferences = new OOUI\FieldLayout(
+			$spacer,
+			[
+				'label' => new OOUI\LabelWidget( [
+					'input' => $spacer,
+					'label' => new OOUI\HtmlSnippet(
+						Html::openElement( 'div' ) .
+						Html::rawElement( 'strong', [],
+							 $this->msg( 'mobile-frontend-user-pref-option' )->parse() ) .
+						Html::rawElement( 'div', [ 'class' => 'option-description' ],
+							 $this->msg( 'mobile-frontend-user-pref-description' )->parse()
+						) .
+						Html::closeElement( 'div' )
+					)
+				] ),
+				'id' => 'mobile-user-pref',
+			]
+		);
+
+		$userPreferences->appendContent( new OOUI\HtmlSnippet(
+			Html::openElement( 'ul', [ 'class' => 'hlist option-links' ] ) .
+			Html::openElement( 'li' ) .
+			Html::rawElement(
+				'a',
+				[ 'href' => Title::newFromText( 'Special:Preferences' )->getLocalURL() ],
+				$this->msg( 'mobile-frontend-user-pref-link' )->parse()
+			) .
+			Html::closeElement( 'li' ) .
+			Html::closeElement( 'ul' )
+		) );
+		return $userPreferences;
+	}
+
+	/**
 	 * Render the settings form (with actual set settings) and add it to the
 	 * output as well as any supporting modules.
 	 */
 	private function addSettingsForm() {
 		$out = $this->getOutput();
 		$user = $this->getUser();
+		$isTemp = $user->isTemp();
 
 		$out->setPageTitle( $this->msg( 'mobile-frontend-main-menu-settings-heading' ) );
 		$out->enableOOUI();
@@ -169,9 +212,10 @@ class SpecialMobileOptions extends MobileSpecialPage {
 		] );
 		$form->addClasses( [ 'mw-mf-settings' ] );
 
-		if ( $this->amc->isAvailable() ) {
+		if ( $this->amc->isAvailable() && !$isTemp ) {
 			$fields[] = $this->buildAMCToggle();
 		}
+
 		// beta settings
 		$isInBeta = $this->mobileContext->isBetaGroupMember();
 		if ( $this->config->get( 'MFEnableBeta' ) ) {
@@ -249,9 +293,11 @@ class SpecialMobileOptions extends MobileSpecialPage {
 			'type' => 'submit',
 		] );
 
-		if ( $user->isRegistered() ) {
+		if ( $user->isRegistered() && !$isTemp ) {
 			$fields[] = new OOUI\HiddenInputWidget( [ 'name' => 'token',
 				'value' => $user->getEditToken() ] );
+			// Special:Preferences link (https://phabricator.wikimedia.org/T327506)
+			$fields[] = $this->buildMobileUserPreferences();
 		}
 
 		$feedbackLink = $this->getConfig()->get( 'MFBetaFeedbackLink' );
@@ -336,8 +382,8 @@ class SpecialMobileOptions extends MobileSpecialPage {
 			}
 
 			$latestUser = $this->getUser()->getInstanceForUpdate();
-			if ( $latestUser === null ) {
-				// The user is anon or could not be loaded from the database.
+			if ( $latestUser === null || !$latestUser->isNamed() ) {
+				// The user is anon, temp user or could not be loaded from the database.
 				return;
 			}
 

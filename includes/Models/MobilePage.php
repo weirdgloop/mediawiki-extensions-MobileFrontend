@@ -6,7 +6,7 @@ use File;
 use Html;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\RevisionRecord;
-use Title;
+use MediaWiki\Title\Title;
 
 /**
  * Retrieves information specific to a mobile page
@@ -18,7 +18,7 @@ class MobilePage {
 	public const TINY_IMAGE_WIDTH = 120;
 
 	/**
-	 * @var Title Title for page
+	 * @var Title
 	 */
 	private $title;
 	/**
