@@ -2,7 +2,7 @@
 
 namespace Tests\MobileFrontend\Devices;
 
-use GlobalVarConfig;
+use MediaWiki\Config\GlobalVarConfig;
 use MediaWiki\Request\FauxRequest;
 use MediaWikiIntegrationTestCase;
 use MobileFrontend\Devices\DeviceDetectorService;
@@ -16,6 +16,10 @@ use MobileFrontend\Devices\DeviceDetectorService;
  * @group integration
  */
 class DeviceDetectorServiceIntegrationTest extends MediaWikiIntegrationTestCase {
+
+	private FauxRequest $request;
+	private array $server;
+
 	protected function setUp(): void {
 		parent::setUp();
 

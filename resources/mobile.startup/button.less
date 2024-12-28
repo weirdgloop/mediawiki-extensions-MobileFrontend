@@ -3,12 +3,7 @@
 /* stylelint-disable no-descending-specificity */
 
 // Used to center the contents of buttons, i.e. section collapse buttons
-// TODO: See if these can be removed after mw-ui-icon usage is replaced with Codex
 .cdx-button {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-
 	.mf-icon + span:not( :empty ) {
 		margin-left: 8px;
 	}
@@ -34,15 +29,15 @@
 	}
 }
 
-// Similar to deprecated .mw-ui-block
 // TODO: Replace with Codex Button group
-// Extra specificity so that it overrides .cdx-button--fake-button inline-flex rule.
+// Extra specificity so that it overrides .cdx-button--fake-button rules.
 .mf-button-block.cdx-button--fake-button {
 	border-radius: 0;
-	display: block;
 	width: 100%;
 	margin-left: auto;
 	margin-right: auto;
+	// Integer value prevents off-by-1px vertical alignment
+	line-height: 30px;
 
 	span {
 		display: block;

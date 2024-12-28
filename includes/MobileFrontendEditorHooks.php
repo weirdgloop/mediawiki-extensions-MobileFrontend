@@ -1,9 +1,14 @@
 <?php
 
+use MediaWiki\Config\Config;
+use MediaWiki\Context\IContextSource;
 use MediaWiki\Hook\CustomEditorHook;
-use MediaWiki\Hook\MakeGlobalVariablesScriptHook;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Output\Hook\MakeGlobalVariablesScriptHook;
+use MediaWiki\Output\OutputPage;
+use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\ResourceLoader\Context;
+use MediaWiki\User\User;
 
 class MobileFrontendEditorHooks implements
 	CustomEditorHook,
@@ -43,10 +48,8 @@ class MobileFrontendEditorHooks implements
 		$config = MediaWikiServices::getInstance()->getService( 'MobileFrontend.Config' );
 
 		return [
-			// MFDefaultEditor should be `source`, `visual`, or `preference`
-			// `preference` means to fall back on the desktop `visualeditor-editor` setting (if VE has been used)
-			// editor.js
 			'wgMFDefaultEditor' => $config->get( 'MFDefaultEditor' ),
+			'wgMFFallbackEditor' => $config->get( 'MFFallbackEditor' ),
 			'wgMFEnableVEWikitextEditor' => $config->get( 'MFEnableVEWikitextEditor' ),
 		];
 	}
@@ -60,6 +63,7 @@ class MobileFrontendEditorHooks implements
 	 * @param OutputPage $out OutputPage instance calling the hook
 	 */
 	public function onMakeGlobalVariablesScript( &$vars, $out ): void {
+		/** @var MobileContext $mobileContext */
 		$mobileContext = MediaWikiServices::getInstance()->getService( 'MobileFrontend.Context' );
 		$config = MediaWikiServices::getInstance()->getService( 'MobileFrontend.Config' );
 
@@ -92,7 +96,7 @@ class MobileFrontendEditorHooks implements
 
 			$out = $article->getContext()->getOutput();
 			$titleMsg = $title->exists() ? 'editing' : 'creating';
-			$out->setPageTitle( wfMessage( $titleMsg, $title->getPrefixedText() ) );
+			$out->setPageTitleMsg( wfMessage( $titleMsg, $title->getPrefixedText() ) );
 
 			$msg = false;
 			$msgParams = false;
@@ -101,7 +105,8 @@ class MobileFrontendEditorHooks implements
 				$msg = 'mobile-frontend-editor-uploadenable';
 			} else {
 				$msg = 'mobile-frontend-editor-toload';
-				$msgParams = wfExpandUrl( $url );
+				$urlUtils = MediaWikiServices::getInstance()->getUrlUtils();
+				$msgParams = $urlUtils->expand( $url, PROTO_CURRENT );
 			}
 			$out->showPendingTakeover( $url, $msg, $msgParams );
 
@@ -118,6 +123,7 @@ class MobileFrontendEditorHooks implements
 	 * @return bool Whether the frontend JS should try to display an editor
 	 */
 	protected static function isSupportedEditRequest( IContextSource $context ) {
+		/** @var MobileContext $mobileContext */
 		$mobileContext = MediaWikiServices::getInstance()->getService( 'MobileFrontend.Context' );
 		if ( !$mobileContext->shouldDisplayMobileView() ) {
 			return false;
@@ -136,7 +142,7 @@ class MobileFrontendEditorHooks implements
 		$title = $context->getTitle();
 
 		// Various things fall back to WikiEditor
-		if ( $req->getVal( 'action' ) == 'submit' ) {
+		if ( $req->getRawVal( 'action' ) === 'submit' ) {
 			// Don't try to take over if the form has already been submitted
 			return false;
 		}
@@ -148,11 +154,11 @@ class MobileFrontendEditorHooks implements
 			// (You can test this on MediaWiki:Common.css) ?action=edit url (T173800)
 			return false;
 		}
-		if ( $req->getVal( 'undo' ) !== null || $req->getVal( 'undoafter' ) !== null ) {
+		if ( $req->getCheck( 'undo' ) || $req->getCheck( 'undoafter' ) ) {
 			// Undo needs to show a diff above the editor
 			return false;
 		}
-		if ( $req->getVal( 'section' ) == 'new' ) {
+		if ( $req->getRawVal( 'section' ) === 'new' ) {
 			// New sections need a title field
 			return false;
 		}

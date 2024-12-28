@@ -22,6 +22,9 @@ QUnit.module( 'MobileFrontend Drawer.js', {
 		jQuery.setUp( sandbox, global );
 		oo.setUp( sandbox, global );
 
+		// requestAnimationFrame doesn't exist in Node
+		global.requestAnimationFrame = setTimeout;
+
 		// Additional Drawer global dependency.
 		mw.setUp( sandbox, global );
 		mustache.setUp( sandbox, global );
@@ -43,6 +46,7 @@ QUnit.test( 'visible on show()', function ( assert ) {
 	const
 		done = assert.async(),
 		onShow = () => {
+			// eslint-disable-next-line no-use-before-define
 			assertVisible( subject );
 			assert.true( true );
 			done();
@@ -76,6 +80,7 @@ QUnit.test( 'hidden on hide()', function ( assert ) {
 	const
 		done = assert.async(),
 		onBeforeHide = () => {
+			// eslint-disable-next-line no-use-before-define
 			assertHidden( subject );
 			assert.true( true );
 			done();
@@ -89,6 +94,7 @@ QUnit.test( 'hidden on mask click', function ( assert ) {
 	const
 		done = assert.async(),
 		onBeforeHide = () => {
+			// eslint-disable-next-line no-use-before-define
 			assertHidden( subject );
 			assert.true( true );
 			done();
@@ -104,7 +110,7 @@ QUnit.test( 'HTML is valid', function ( assert ) {
 	assert.strictEqual(
 		subject.$el.find( '.drawer' ).get( 0 ).outerHTML,
 		`<div class="drawer drawer-container__drawer position-fixed"><button type="button" class="cdx-button cdx-button--size-large cdx-button--weight-quiet cdx-button--icon-only cancel">
-				<span class="mf-icon mw-ui-icon-mf-expand "> </span>
+				<span class="mf-icon mf-icon-expand "> </span>
 				<span>mobile-frontend-drawer-arrow-label</span>
 		</button></div>`
 	);

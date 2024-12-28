@@ -2,7 +2,6 @@
 
 namespace Tests\MobileFrontend\Context;
 
-use MediaWiki\MediaWikiServices;
 use MediaWikiIntegrationTestCase;
 use MobileContext;
 
@@ -25,7 +24,7 @@ class MobileContextShouldDisplayMobileViewIntegrationTest extends MediaWikiInteg
 		parent::setUp();
 
 		MobileContext::resetInstanceForTesting();
-		$this->context = MediaWikiServices::getInstance()->getService( 'MobileFrontend.Context' );
+		$this->context = $this->getServiceContainer()->getService( 'MobileFrontend.Context' );
 	}
 
 	/**
@@ -52,7 +51,7 @@ class MobileContextShouldDisplayMobileViewIntegrationTest extends MediaWikiInteg
 		$this->overrideConfigValues( [
 			'MFAutodetectMobileView' => true,
 			'MFMobileHeader' => 'X-Subdomain',
-			'MobileUrlTemplate' => '%h0.m.%h1.%h2',
+			'MobileUrlCallback' => fn ( $domain ) => "m.$domain",
 		] );
 
 		$request = $this->context->getRequest();

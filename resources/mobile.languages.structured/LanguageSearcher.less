@@ -10,6 +10,8 @@
 	.search-box {
 		// Always show the language search input
 		display: block;
+		// Make sure the absolutely positioned search icon overlaps the search input
+		position: relative;
 	}
 
 	.search {
@@ -45,7 +47,7 @@
 		}
 
 		a {
-			border-top: @border-width-base @border-style-base #eaecf0;
+			border-top: @border-width-base @border-style-base @border-color-muted;
 			cursor: pointer;
 			display: block;
 			padding: 0.75em 1em;
@@ -61,12 +63,12 @@
 
 			.autonym {
 				// FIXME: Does this really need to be emphasized?
-				color: @color-emphasized;
+				color: @color-emphasized; // TODO
 				font-weight: bold;
 			}
 
 			.title {
-				color: #72777d;
+				color: @color-subtle;
 				padding-top: 0.5em;
 			}
 		}
@@ -81,7 +83,7 @@
 	}
 }
 
-@media all and ( min-width: @width-breakpoint-tablet ) {
+@media all and ( min-width: @min-width-breakpoint-tablet ) {
 	.language-searcher {
 		.site-link-list {
 			padding-left: 0;

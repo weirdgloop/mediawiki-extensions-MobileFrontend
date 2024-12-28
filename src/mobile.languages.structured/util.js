@@ -1,4 +1,4 @@
-var
+const
 	mfUtils = require( '../mobile.startup/util' ),
 	rtlLanguages = require( './rtlLanguages' );
 
@@ -21,6 +21,7 @@ var
  * @typedef {Object} StructuredLanguages
  * @prop {Language[]} all languages that are available
  * @prop {SuggestedLanguage[]} suggested languages based on users browsing history
+ * @ignore
  */
 
 /**
@@ -30,13 +31,16 @@ var
  * if article is available in it. For example, if the device language is
  * 'en-gb', and the article is only available in 'en', then return 'en'.
  *
+ * @ignore
  * @param {Object[]} languages list of language objects as returned by the API
  * @param {string|undefined} deviceLanguage the device's primary language
  * @return {string|undefined} Return undefined if the article is not available in
  *  the (general or variant) device language
  */
 function getDeviceLanguageOrParent( languages, deviceLanguage ) {
-	var parentLanguage, index,
+	let parentLanguage;
+
+	const
 		hasOwn = Object.prototype.hasOwnProperty,
 		deviceLanguagesWithVariants = {};
 
@@ -45,7 +49,7 @@ function getDeviceLanguageOrParent( languages, deviceLanguage ) {
 	}
 
 	// Are we dealing with a variant?
-	index = deviceLanguage.indexOf( '-' );
+	const index = deviceLanguage.indexOf( '-' );
 	if ( index !== -1 ) {
 		parentLanguage = deviceLanguage.slice( 0, index );
 	}
@@ -70,6 +74,7 @@ function getDeviceLanguageOrParent( languages, deviceLanguage ) {
  *
  * @class util
  * @singleton
+ * @private
  */
 module.exports = {
 	/**
@@ -85,8 +90,8 @@ module.exports = {
 	 * @return {Object} language with 'lang' key and new 'dir' key.
 	 */
 	getDir: function ( language ) {
-		var dir = rtlLanguages.indexOf( language.lang ) > -1 ? 'rtl' : 'ltr';
-		return mfUtils.extend( {}, language, { dir: dir } );
+		const dir = rtlLanguages.indexOf( language.lang ) > -1 ? 'rtl' : 'ltr';
+		return mfUtils.extend( {}, language, { dir } );
 	},
 
 	/**
@@ -102,6 +107,7 @@ module.exports = {
 	 * their language names.
 	 *
 	 * @memberof util
+	 * @ignore
 	 * @instance
 	 * @param {Object[]} languages list of language objects as returned by the API
 	 * @param {Array|boolean} variants language variant objects or false if no variants exist
@@ -117,18 +123,19 @@ module.exports = {
 		showSuggestedLanguages,
 		deviceLanguage
 	) {
-		var hasOwn = Object.prototype.hasOwnProperty,
-			maxFrequency = 0,
+		const hasOwn = Object.prototype.hasOwnProperty,
+			self = this;
+
+		let maxFrequency = 0,
 			minFrequency = 0,
 			suggestedLanguages = [],
-			allLanguages = [],
-			self = this;
+			allLanguages = [];
 
 		// Is the article available in the user's device language?
 		deviceLanguage = getDeviceLanguageOrParent( languages, deviceLanguage );
 		if ( deviceLanguage ) {
 			Object.keys( frequentlyUsedLanguages ).forEach( function ( language ) {
-				var frequency = frequentlyUsedLanguages[ language ];
+				const frequency = frequentlyUsedLanguages[ language ];
 				maxFrequency = maxFrequency < frequency ? frequency : maxFrequency;
 				minFrequency = minFrequency > frequency ? frequency : minFrequency;
 			} );
@@ -210,7 +217,7 @@ module.exports = {
 	 * @return {Object}
 	 */
 	getFrequentlyUsedLanguages: function () {
-		var languageMap = mw.storage.get( 'langMap' );
+		const languageMap = mw.storage.get( 'langMap' );
 
 		return languageMap ? JSON.parse( languageMap ) : {};
 	},
@@ -236,7 +243,7 @@ module.exports = {
 	 * @param {Object} frequentlyUsedLanguages list of the frequently used languages
 	 */
 	saveLanguageUsageCount: function ( languageCode, frequentlyUsedLanguages ) {
-		var count = frequentlyUsedLanguages[ languageCode ] || 0;
+		let count = frequentlyUsedLanguages[ languageCode ] || 0;
 
 		count += 1;
 		// cap at 100 as this is enough data to work on

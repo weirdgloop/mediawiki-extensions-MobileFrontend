@@ -1,4 +1,4 @@
-var
+const
 	mfExtend = require( './mfExtend' ),
 	util = require( './util' ),
 	View = require( './View' ),
@@ -8,7 +8,7 @@ var
  * A wrapper for creating an icon button.
  *
  * @class IconButton
- * @extends View
+ * @extends module:mobile.startup/View
  *
  * @param {Object} options Configuration options
  */
@@ -28,7 +28,7 @@ mfExtend( IconButton, View, {
 	 * @memberof IconButton
 	 * @instance
 	 */
-	preRender: function () {
+	preRender() {
 		this.options._buttonClasses = this.getButtonClasses();
 		this.options._iconHTML = '';
 		if ( this.options.icon ) {
@@ -42,25 +42,25 @@ mfExtend( IconButton, View, {
 			this.options._iconHTML = this._icon.$el.get( 0 ).outerHTML;
 		}
 	},
-	getButtonClasses: function () {
-		var additionalClassNames = this.options.additionalClassNames;
-		var size = this.options.size;
-		var weight = this.options.weight;
-		var action = this.options.action;
-		var isIconOnly = this.options.isIconOnly;
-		var classes = 'cdx-button ';
+	getButtonClasses() {
+		const additionalClassNames = this.options.additionalClassNames;
+		const size = this.options.size;
+		const weight = this.options.weight;
+		const action = this.options.action;
+		const isIconOnly = this.options.isIconOnly;
+		let classes = 'cdx-button ';
 
 		if ( this.options.tagName !== 'button' ) {
 			classes += 'cdx-button--fake-button cdx-button--fake-button--enabled ';
 		}
 		if ( size ) {
-			classes += `cdx-button--size-${size} `;
+			classes += `cdx-button--size-${ size } `;
 		}
 		if ( weight ) {
-			classes += `cdx-button--weight-${weight} `;
+			classes += `cdx-button--weight-${ weight } `;
 		}
 		if ( action ) {
-			classes += `cdx-button--action-${action} `;
+			classes += `cdx-button--action-${ action } `;
 		}
 		if ( isIconOnly ) {
 			classes += 'cdx-button--icon-only ';
@@ -76,7 +76,7 @@ mfExtend( IconButton, View, {
 	/**
 	 * @memberof IconButton
 	 * @instance
-	 * @mixes View#defaults
+	 * @mixes module:mobile.startup/View#defaults
 	 * @property {Object} defaults Default options hash.
 	 * @property {string} defaults.tagName The name of the tag in which the button is wrapped.
 	 *  Defaults to 'a' when href option present.
@@ -111,7 +111,6 @@ mfExtend( IconButton, View, {
 		isIconOnly: true,
 		disabled: false,
 		base: 'mf-icon',
-		glyphPrefix: 'mf',
 		icon: '',
 		rotation: 0,
 		isSmall: false
@@ -123,10 +122,10 @@ mfExtend( IconButton, View, {
 	 * @instance
 	 * @return {string}
 	 */
-	getClassName: function () {
+	getClassName() {
 		return this.$el.attr( 'class' );
 	},
-	getIcon: function () {
+	getIcon() {
 		return this._icon;
 	},
 	template: util.template( `

@@ -1,21 +1,23 @@
 <?php
 
+use MediaWiki\Config\Config;
+use MediaWiki\Deferred\DeferredUpdates;
+use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
-use MediaWiki\User\UserOptionsManager;
+use MediaWiki\Request\WebRequest;
+use MediaWiki\SpecialPage\UnlistedSpecialPage;
+use MediaWiki\Title\Title;
+use MediaWiki\User\Options\UserOptionsManager;
 use MobileFrontend\Amc\UserMode;
 use MobileFrontend\Features\IFeature;
+use Wikimedia\Rdbms\ReadOnlyMode;
 
 /**
  * Adds a special page with mobile specific preferences
  */
-class SpecialMobileOptions extends MobileSpecialPage {
+class SpecialMobileOptions extends UnlistedSpecialPage {
 	/** @var bool Whether this special page has a desktop version or not */
 	protected $hasDesktopVersion = true;
-
-	/**
-	 * @var MediaWikiServices
-	 */
-	private $services;
 
 	/**
 	 * Advanced Mobile Contributions mode
@@ -26,25 +28,35 @@ class SpecialMobileOptions extends MobileSpecialPage {
 	/**
 	 * @var \MobileFrontend\Features\FeaturesManager
 	 */
-	private $featureManager;
+	private $featuresManager;
 
 	/** @var UserMode */
 	private $userMode;
 
 	/** @var UserOptionsManager */
-	private $userOptionsManager;
+	private UserOptionsManager $userOptionsManager;
 
 	/** @var ReadOnlyMode */
-	private $readOnlyMode;
+	private ReadOnlyMode $readOnlyMode;
+	/** @var MobileContext */
+	private $mobileContext;
+	/** @var Config MobileFrontend's config object */
+	protected Config $config;
 
-	public function __construct() {
+	public function __construct(
+		UserOptionsManager $userOptionsManager,
+		ReadOnlyMode $readOnlyMode,
+		Config $config
+	) {
 		parent::__construct( 'MobileOptions' );
-		$this->services = MediaWikiServices::getInstance();
-		$this->amc = $this->services->getService( 'MobileFrontend.AMC.Manager' );
-		$this->featureManager = $this->services->getService( 'MobileFrontend.FeaturesManager' );
-		$this->userMode = $this->services->getService( 'MobileFrontend.AMC.UserMode' );
-		$this->userOptionsManager = $this->services->getUserOptionsManager();
-		$this->readOnlyMode = $this->services->getReadOnlyMode();
+		$services = MediaWikiServices::getInstance();
+		$this->amc = $services->getService( 'MobileFrontend.AMC.Manager' );
+		$this->featuresManager = $services->getService( 'MobileFrontend.FeaturesManager' );
+		$this->userMode = $services->getService( 'MobileFrontend.AMC.UserMode' );
+		$this->mobileContext = $services->getService( 'MobileFrontend.Context' );
+		$this->userOptionsManager = $userOptionsManager;
+		$this->readOnlyMode = $readOnlyMode;
+		$this->config = $config;
 	}
 
 	/**
@@ -60,7 +72,7 @@ class SpecialMobileOptions extends MobileSpecialPage {
 	public function setJsConfigVars() {
 		$this->getOutput()->addJsConfigVars( [
 			'wgMFCollapseSectionsByDefault' => $this->getConfig()->get( 'MFCollapseSectionsByDefault' ),
-			'wgMFEnableFontChanger' => $this->featureManager->isFeatureAvailableForCurrentUser(
+			'wgMFEnableFontChanger' => $this->featuresManager->isFeatureAvailableForCurrentUser(
 				'MFEnableFontChanger'
 			),
 		] );
@@ -72,8 +84,18 @@ class SpecialMobileOptions extends MobileSpecialPage {
 	 */
 	public function execute( $par = '' ) {
 		parent::execute( $par );
+		$out = $this->getOutput();
 
 		$this->setHeaders();
+		$out->addBodyClasses( 'mw-mf-special-page' );
+		$out->addModuleStyles( [
+			'mobile.special.styles',
+			'mobile.special.codex.styles',
+			'mobile.special.mobileoptions.styles',
+		] );
+		$out->addModules( [
+			'mobile.special.mobileoptions.scripts',
+		] );
 		$this->setJsConfigVars();
 
 		$this->mobileContext->setForceMobileView( true );
@@ -86,57 +108,55 @@ class SpecialMobileOptions extends MobileSpecialPage {
 	}
 
 	private function buildAMCToggle() {
-		/** @var \MobileFrontend\Amc\UserMode $userMode */
-			$userMode = $this->services->getService( 'MobileFrontend.AMC.UserMode' );
-			$amcToggle = new OOUI\CheckboxInputWidget( [
-				'name' => 'enableAMC',
-				'infusable' => true,
-				'selected' => $userMode->isEnabled(),
-				'id' => 'enable-amc-toggle',
-				'value' => '1',
-			] );
-			$layout = new OOUI\FieldLayout(
-				$amcToggle,
-				[
-					'label' => new OOUI\LabelWidget( [
-						'input' => $amcToggle,
-						'label' => new OOUI\HtmlSnippet(
-							Html::openElement( 'div' ) .
-							Html::rawElement( 'strong', [],
-								$this->msg( 'mobile-frontend-mobile-option-amc' )->parse() ) .
-							Html::rawElement( 'div', [ 'class' => 'option-description' ],
-								$this->msg( 'mobile-frontend-mobile-option-amc-experiment-description' )->parse()
-							) .
-							Html::closeElement( 'div' )
-						)
-					] ),
-					'id' => 'amc-field',
-				]
-			);
-			// placing links inside a label reduces usability and accessibility so
-			// append links to $layout and outside of label instead
-			// https://www.w3.org/TR/html52/sec-forms.html#example-42c5e0c5
-			$layout->appendContent( new OOUI\HtmlSnippet(
-					Html::openElement( 'ul', [ 'class' => 'hlist option-links' ] ) .
-					Html::openElement( 'li' ) .
-					Html::rawElement(
-							'a',
-							// phpcs:ignore Generic.Files.LineLength.TooLong
-							[ 'href' => 'https://www.mediawiki.org/wiki/Special:MyLanguage/Reading/Web/Advanced_mobile_contributions' ],
-							$this->msg( 'mobile-frontend-mobile-option-amc-learn-more' )->parse()
-					) .
-					Html::closeElement( 'li' ) .
-					Html::openElement( 'li' ) .
-					Html::rawElement(
-							'a',
-							// phpcs:ignore Generic.Files.LineLength.TooLong
-							[ 'href' => 'https://www.mediawiki.org/wiki/Special:MyLanguage/Talk:Reading/Web/Advanced_mobile_contributions' ],
-							$this->msg( 'mobile-frontend-mobile-option-amc-send-feedback' )->parse()
-					) .
-					Html::closeElement( 'li' ) .
-					Html::closeElement( 'ul' )
-			) );
-			return $layout;
+		$amcToggle = new OOUI\CheckboxInputWidget( [
+			'name' => 'enableAMC',
+			'infusable' => true,
+			'selected' => $this->userMode->isEnabled(),
+			'id' => 'enable-amc-toggle',
+			'value' => '1',
+		] );
+		$layout = new OOUI\FieldLayout(
+			$amcToggle,
+			[
+				'label' => new OOUI\LabelWidget( [
+					'input' => $amcToggle,
+					'label' => new OOUI\HtmlSnippet(
+						Html::openElement( 'div' ) .
+						Html::rawElement( 'strong', [],
+							$this->msg( 'mw-mf-amc-name' )->parse() ) .
+						Html::rawElement( 'div', [ 'class' => 'option-description' ],
+							$this->msg( 'mw-mf-amc-description' )->parse()
+						) .
+						Html::closeElement( 'div' )
+					)
+				] ),
+				'id' => 'amc-field',
+			]
+		);
+		// placing links inside a label reduces usability and accessibility so
+		// append links to $layout and outside of label instead
+		// https://www.w3.org/TR/html52/sec-forms.html#example-42c5e0c5
+		$layout->appendContent( new OOUI\HtmlSnippet(
+			Html::openElement( 'ul', [ 'class' => 'hlist option-links' ] ) .
+			Html::openElement( 'li' ) .
+			Html::rawElement(
+					'a',
+					// phpcs:ignore Generic.Files.LineLength.TooLong
+					[ 'href' => 'https://www.mediawiki.org/wiki/Special:MyLanguage/Reading/Web/Advanced_mobile_contributions' ],
+					$this->msg( 'mobile-frontend-mobile-option-amc-learn-more' )->parse()
+			) .
+			Html::closeElement( 'li' ) .
+			Html::openElement( 'li' ) .
+			Html::rawElement(
+					'a',
+					// phpcs:ignore Generic.Files.LineLength.TooLong
+					[ 'href' => 'https://www.mediawiki.org/wiki/Special:MyLanguage/Talk:Reading/Web/Advanced_mobile_contributions' ],
+					$this->msg( 'mobile-frontend-mobile-option-amc-send-feedback' )->parse()
+			) .
+			Html::closeElement( 'li' ) .
+			Html::closeElement( 'ul' )
+		) );
+		return $layout;
 	}
 
 	/**
@@ -182,6 +202,18 @@ class SpecialMobileOptions extends MobileSpecialPage {
 	}
 
 	/**
+	 * Mark some html as being content
+	 * @param string $html HTML content
+	 * @param string $className additional class names
+	 * @return string of html
+	 */
+	private static function contentElement( $html, $className = '' ) {
+		return Html::rawElement( 'div', [
+			'class' => 'content'
+		], $html );
+	}
+
+	/**
 	 * Render the settings form (with actual set settings) and add it to the
 	 * output as well as any supporting modules.
 	 */
@@ -190,12 +222,12 @@ class SpecialMobileOptions extends MobileSpecialPage {
 		$user = $this->getUser();
 		$isTemp = $user->isTemp();
 
-		$out->setPageTitle( $this->msg( 'mobile-frontend-main-menu-settings-heading' ) );
+		$out->setPageTitleMsg( $this->msg( 'mobile-frontend-main-menu-settings-heading' ) );
 		$out->enableOOUI();
 
 		if ( $this->getRequest()->getCheck( 'success' ) ) {
 			$out->wrapWikiMsg(
-				MobileUI::contentElement(
+				self::contentElement(
 					Html::successBox(
 						$this->msg( 'savedprefs' )->parse(),
 						'mw-mf-mobileoptions-message'
@@ -245,12 +277,15 @@ class SpecialMobileOptions extends MobileSpecialPage {
 				]
 			);
 
-			$manager = $this->services->getService( 'MobileFrontend.FeaturesManager' );
 			// TODO The userMode should know how to retrieve features assigned to that mode,
 			// we shouldn't do any special logic like this in anywhere else in the code
 			$features = array_diff(
-				$manager->getAvailableForMode( $manager->getMode( IFeature::CONFIG_BETA ) ),
-				$manager->getAvailableForMode( $manager->getMode( IFeature::CONFIG_STABLE ) )
+				$this->featuresManager->getAvailableForMode(
+					$this->featuresManager->getMode( IFeature::CONFIG_BETA )
+				),
+				$this->featuresManager->getAvailableForMode(
+					$this->featuresManager->getMode( IFeature::CONFIG_STABLE )
+				)
 			);
 
 			$classNames = [ 'mobile-options-beta-feature' ];
@@ -265,7 +300,7 @@ class SpecialMobileOptions extends MobileSpecialPage {
 				$fields[] = new OOUI\FieldLayout(
 					new OOUI\IconWidget( [
 						'icon' => $icon,
-						'title' => wfMessage( 'mobile-frontend-beta-only' )->text(),
+						'title' => $this->msg( 'mobile-frontend-beta-only' )->text(),
 					] ),
 					[
 						'classes' => $classNames,
@@ -273,9 +308,9 @@ class SpecialMobileOptions extends MobileSpecialPage {
 							'label' => new OOUI\HtmlSnippet(
 								Html::rawElement( 'div', [],
 									Html::element( 'strong', [],
-										wfMessage( $feature->getNameKey() )->text() ) .
+										$this->msg( $feature->getNameKey() )->text() ) .
 									Html::element( 'div', [ 'class' => 'option-description' ],
-										wfMessage( $feature->getDescriptionKey() )->text() )
+										$this->msg( $feature->getDescriptionKey() )->text() )
 								)
 							),
 						] )

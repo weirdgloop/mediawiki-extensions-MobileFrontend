@@ -1,12 +1,11 @@
-var
+const
 	HTML = mw.html,
 	util = require( './util' );
 
-/**
- * Mobile page view object
- */
 class Page {
 	/**
+	 * @class module:mobile.startup/Page
+	 * @classdesc Mobile page view object
 	 * @param {Object} options Configuration options
 	 * @param {number} options.id Page ID. The default value of 0 represents a
 	 * new or missing page. Be sure to override it to avoid side effects.
@@ -23,7 +22,6 @@ class Page {
 	 * @param {string} options.wikidataDescription
 	 * @param {boolean} options.isMainPage Whether the page is the Main Page.
 	 * @param {boolean} options.isMissing Whether the page exists in the wiki.
-	 * @param {Date} [options.lastModified]
 	 * @param {string} options.anchor
 	 * @param {string} [options.relevantTitle] associated with page.
 	 *  For example Special:WhatLinksHere/Foo would be associated with the page `Foo`.
@@ -53,7 +51,6 @@ class Page {
 			_isMainPage: options.isMainPage || false,
 			isMissing: ( options.isMissing !== undefined ) ?
 				options.isMissing : options.id === 0,
-			lastModified: options.lastModified,
 			anchor: options.anchor,
 			revId: options.revId,
 			_isWatched: options.isWatched,
@@ -69,14 +66,17 @@ class Page {
 	/**
 	 * Retrieve the title that should be displayed to the user
 	 *
+	 * @memberof module:mobile.startup/Page
 	 * @return {string} HTML
 	 */
 	getDisplayTitle() {
 		return this.displayTitle;
 	}
+
 	/**
 	 * Determine if current page is in a specified namespace
 	 *
+	 * @memberof module:mobile.startup/Page
 	 * @param {string} namespace Name of namespace
 	 * @return {boolean}
 	 */
@@ -87,6 +87,7 @@ class Page {
 	/**
 	 * Determines if content model is wikitext
 	 *
+	 * @memberof module:mobile.startup/Page
 	 * @return {boolean}
 	 */
 	isWikiText() {
@@ -96,6 +97,7 @@ class Page {
 	/**
 	 * Check if the visual editor is available on this page
 	 *
+	 * @memberof module:mobile.startup/Page
 	 * @return {boolean}
 	 */
 	isVEAvailable() {
@@ -107,14 +109,15 @@ class Page {
 	/**
 	 * Check if the visual editor in visual mode is available on this page
 	 *
+	 * @memberof module:mobile.startup/Page
 	 * @return {boolean}
 	 */
 	isVEVisualAvailable() {
 		if ( !this.isVEAvailable() ) {
 			return false;
 		}
-		var config = mw.config.get( 'wgVisualEditorConfig' );
-		var visualEditorNamespaces = config.namespaces || [];
+		const config = mw.config.get( 'wgVisualEditorConfig' );
+		const visualEditorNamespaces = config.namespaces || [];
 
 		return visualEditorNamespaces.indexOf( mw.config.get( 'wgNamespaceNumber' ) ) !== -1;
 	}
@@ -122,6 +125,7 @@ class Page {
 	/**
 	 * Check if the visual editor in source mode is available on this page
 	 *
+	 * @memberof module:mobile.startup/Page
 	 * @return {boolean}
 	 */
 	isVESourceAvailable() {
@@ -132,14 +136,17 @@ class Page {
 	/**
 	 * Checks whether the current page is the main page
 	 *
+	 * @memberof module:mobile.startup/Page
 	 * @return {boolean}
 	 */
 	isMainPage() {
 		return this._isMainPage;
 	}
+
 	/**
 	 * Checks whether the current page is watched
 	 *
+	 * @memberof module:mobile.startup/Page
 	 * @return {boolean}
 	 */
 	isWatched() {
@@ -149,6 +156,7 @@ class Page {
 	/**
 	 * Return the latest revision id for this page
 	 *
+	 * @memberof module:mobile.startup/Page
 	 * @return {number}
 	 */
 	getRevisionId() {
@@ -158,6 +166,7 @@ class Page {
 	/**
 	 * Return prefixed page title
 	 *
+	 * @memberof module:mobile.startup/Page
 	 * @return {string}
 	 */
 	getTitle() {
@@ -167,11 +176,12 @@ class Page {
 	/**
 	 * return namespace id
 	 *
+	 * @memberof module:mobile.startup/Page
 	 * @return {number} namespace Number
 	 */
 	getNamespaceId() {
-		var nsId,
-			args = this.title.split( ':' );
+		let nsId;
+		const args = this.title.split( ':' );
 
 		if ( args[1] ) {
 			nsId = mw.config.get( 'wgNamespaceIds' )[ args[0].toLowerCase().replace( ' ', '_' ) ] || 0;

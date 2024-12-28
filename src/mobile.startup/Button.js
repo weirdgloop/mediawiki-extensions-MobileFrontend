@@ -1,4 +1,4 @@
-var
+const
 	mfExtend = require( './mfExtend' ),
 	util = require( './util' ),
 	View = require( './View' ),
@@ -10,7 +10,8 @@ var
  * using Button.js and IconButton.js will need to be updated to reflect this
  *
  * @class Button
- * @extends View
+ * @private
+ * @extends module:mobile.startup/View
  *
  * @param {Object} options Configuration options
  */
@@ -24,24 +25,24 @@ mfExtend( Button, View, {
 	 * @memberof IconButton
 	 * @instance
 	 */
-	preRender: function () {
+	preRender() {
 		// Mapping existing props to Codex props used in IconButton
-		var action = 'default';
+		let action = 'default';
 		if ( this.options.progressive ) {
 			action = 'progressive';
 		} else if ( this.options.destructive ) {
 			action = 'destructive';
 		}
-		var weight = this.options.quiet ? 'quiet' : 'normal';
+		let weight = this.options.quiet ? 'quiet' : 'normal';
 		if ( this.options.progressive || this.options.destructive ) {
 			weight = 'primary';
 		}
 		if ( this.options.block ) {
 			this.options.additionalClassNames += ' mf-button-block';
 		}
-		var options = util.extend( {
-			weight: weight,
-			action: action,
+		const options = util.extend( {
+			weight,
+			action,
 			isIconOnly: false,
 			icon: null
 		}, this.options );
@@ -58,7 +59,7 @@ mfExtend( Button, View, {
 	/**
 	 * @memberof Button
 	 * @instance
-	 * @mixes View#defaults
+	 * @mixes module:mobile.startup/View#defaults
 	 * @property {Object} defaults Default options hash.
 	 * @property {string} defaults.tagName The name of the tag in which the button is wrapped.
 	 * @property {boolean} defaults.block is stacked button

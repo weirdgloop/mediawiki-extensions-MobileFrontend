@@ -1,5 +1,8 @@
 @import 'mediawiki.skin.variables.less';
 @import '../../mobile.less/mobile.variables.less';
+@import 'BlockMessageDetails.less';
+@import 'editor.ve.less';
+@import 'icons.less';
 
 .editor-overlay {
 	box-sizing: border-box;
@@ -45,6 +48,10 @@
 	.anonwarning {
 		margin-top: 16px;
 
+		.cdx-message {
+			margin-bottom: 16px;
+		}
+
 		.anonmsg {
 			margin-bottom: 19px;
 		}
@@ -73,17 +80,21 @@
 	&-editNotices {
 		// Edit notices are designed for desktop and can be quite long, so use the desktop font size
 		// oo-ui-messageDialog-message sets font size to 1.1em so undo that as well
-		font-size: 14em / 16 / 1.1;
+		font-size: ( 14em / 16 / 1.1 );
 		line-height: 1.6;
 
 		.mw-editnotice {
 			// Images in edit notices are usually supplementary, and cause layout issues on narrow screens
-			img, figure {
+			img,
+			figure {
 				display: none !important;
 			}
 
 			// Reset some specific styles on common block level containers
-			table, td, th, div {
+			table,
+			td,
+			th,
+			div {
 				font-size: 100% !important;
 				background: none !important;
 				margin: 0 !important;

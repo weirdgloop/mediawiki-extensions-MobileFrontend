@@ -1,15 +1,15 @@
 [
 	{
 		"resourceModule": "mobile.startup",
-		"maxSize": "23.2KB"
+		"maxSize": "23.4KB"
 	},
 	{
 		"resourceModule": "mobile.editor.overlay",
-		"maxSize": "12.6KB"
+		"maxSize": "14.2KB"
 	},
 	{
 		"resourceModule": "mobile.init",
-		"maxSize": "4.1KB"
+		"maxSize": "5.9KB"
 	},
 	{
 		"resourceModule": "mobile.languages.structured",
@@ -17,11 +17,11 @@
 	},
 	{
 		"resourceModule": "mobile.mediaViewer",
-		"maxSize": "3.0KB"
+		"maxSize": "3.2KB"
 	},
 	{
 		"resourceModule": "mobile.special.mobileoptions.scripts",
-		"maxSize": "1.3KB"
+		"maxSize": "3.2KB"
 	},
 	{
 		"resourceModule": "mobile.special.userlogin.scripts",
@@ -37,54 +37,18 @@
 	},
 	{
 		"resourceModule": "mobile.pagesummary.styles",
-		"maxSize": "0.4KB"
-	},
-	{
-		"resourceModule": "mobile.placeholder.images",
-		"maxSize": "0.3KB"
-	},
-	{
-		"resourceModule": "mobile.userpage.styles",
-		"maxSize": "0.4KB"
-	},
-	{
-		"resourceModule": "mobile.startup.images",
-		"maxSize": "0.8KB"
-	},
-	{
-		"resourceModule": "mobile.ooui.icons",
-		"maxSize": "0.8KB"
-	},
-	{
-		"resourceModule": "mobile.user.icons",
 		"maxSize": "0.5KB"
 	},
 	{
-		"resourceModule": "mobile.editor.images",
-		"maxSize": "0.4KB"
+		"resourceModule": "mobile.userpage.styles",
+		"maxSize": "0.5KB"
 	},
 	{
 		"resourceModule": "mobile.special.styles",
-		"maxSize": "0.8KB"
+		"maxSize": "1.0KB"
 	},
 	{
 		"resourceModule": "mobile.special.mobileoptions.styles",
-		"maxSize": "0.8KB"
-	},
-	{
-		"resourceModule": "mobile.special.history.styles",
-		"maxSize": "0.4KB"
-	},
-	{
-		"resourceModule": "mobile.special.pagefeed.styles",
-		"maxSize": "1.6KB"
-	},
-	{
-		"resourceModule": "mobile.special.mobilediff.images",
-		"maxSize": "0.4KB"
-	},
-	{
-		"resourceModule": "mobile.special.mobilediff.styles",
-		"maxSize": "1.1KB"
+		"maxSize": "2.2KB"
 	}
 ]

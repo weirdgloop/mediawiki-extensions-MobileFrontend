@@ -101,7 +101,7 @@
 	top: 0;
 	left: 0;
 	width: 100%;
-	background: #fff;
+	background: @background-color-base;
 	z-index: @z-indexOverlay;
 	display: none;
 
@@ -113,7 +113,8 @@
 		display: block;
 	}
 
-	input, textarea {
+	input,
+	textarea {
 		// Without declaring a minimum font-size of 16px, iOS will autozoom in on textareas when clicked (T215619)
 		// https://blog.osmosys.asia/2017/01/05/prevent-ios-from-zooming-in-on-input-fields/
 		font-size: 16px;
@@ -141,7 +142,7 @@
 	.panel {
 		padding-top: 12px;
 		padding-bottom: 12px;
-		border-bottom: @border-width-base @border-style-base #eaecf0;
+		border-bottom: @border-width-base @border-style-base @border-color-muted;
 	}
 }
 
@@ -203,7 +204,7 @@
 .overlay-footer-container {
 	width: 100%;
 	background: @background-color-base;
-	// prevent .page-list or VE surface overlaping the header when scrolling
+	// prevent .mw-mf-page-list or VE surface overlaping the header when scrolling
 	z-index: @z-indexOverOverlay;
 
 	&.position-fixed {
@@ -260,14 +261,14 @@
 	top: auto;
 	bottom: 0;
 	height: auto !important;
-	background: #f8f9fa;
+	background: @background-color-interactive-subtle;
 
 	.overlay-header-container {
-		background: #f8f9fa;
+		background: @background-color-interactive-subtle;
 	}
 }
 
-@media all and ( min-width: @width-breakpoint-tablet ) {
+@media all and ( min-width: @min-width-breakpoint-tablet ) {
 	.overlay {
 		.panel {
 			padding-top: 12px;

@@ -1,8 +1,9 @@
-var View = require( '../mobile.startup/View' ),
+const View = require( '../mobile.startup/View' ),
 	util = require( '../mobile.startup/util' ),
 	mfExtend = require( '../mobile.startup/mfExtend' ),
 	IconButton = require( '../mobile.startup/IconButton' ),
 	icons = require( '../mobile.startup/icons' ),
+	eventBus = require( '../mobile.startup/eventBusSingleton' ),
 	Button = require( '../mobile.startup/Button' ),
 	detailsButton = new Button( {
 		label: mw.msg( 'mobile-frontend-media-details' ),
@@ -21,18 +22,15 @@ var View = require( '../mobile.startup/View' ),
 	} ),
 	LoadErrorMessage = require( './LoadErrorMessage' ),
 	ImageGateway = require( './ImageGateway' ),
-	// FIXME: mw.loader.require is a private function but there's no other way to get hold of
-	// this right now using require will cause webpack to resolve it
-	// Can be rewritten to mw.router when https://gerrit.wikimedia.org/r/#/c/mediawiki/core/+/482732 has been merged
-	router = mw.loader.require( 'mediawiki.router' );
+	router = __non_webpack_require__( 'mediawiki.router' );
 
 /**
  * Displays images in full screen overlay
  *
  * @class ImageCarousel
- * @extends View
- * @param {Object} options Configuration options
- * @param {OO.EventEmitter} options.eventBus Object used to listen for resize:throttled events
+ * @extends module:mobile.startup/View
+ * @param {Object} options Configuration options, see Overlay#defaults
+ * @private
  */
 function ImageCarousel( options ) {
 	this.gateway = options.gateway || new ImageGateway( {
@@ -104,8 +102,7 @@ mfExtend( ImageCarousel, View, {
 	 * @param {jQuery.Event} ev
 	 */
 	onSlide: function ( ev ) {
-		var
-			newImageCarousel,
+		const
 			nextThumbnail = this.$el.find( ev.target ).closest( '.slider-button' ).data( 'thumbnail' ),
 			title = nextThumbnail.options.filename;
 
@@ -114,7 +111,7 @@ mfExtend( ImageCarousel, View, {
 			useReplaceState: true
 		} );
 		this.options.title = nextThumbnail.options.filename;
-		newImageCarousel = new ImageCarousel( this.options );
+		const newImageCarousel = new ImageCarousel( this.options );
 		this.$el.replaceWith( newImageCarousel.$el );
 		this.$el = newImageCarousel.$el;
 	},
@@ -124,7 +121,7 @@ mfExtend( ImageCarousel, View, {
 	 * @instance
 	 */
 	preRender: function () {
-		var self = this;
+		const self = this;
 		this.options.thumbnails.forEach( function ( thumbnail, i ) {
 			if ( thumbnail.getFileName() === self.options.title ) {
 				self.options.caption = thumbnail.getDescription();
@@ -142,8 +139,8 @@ mfExtend( ImageCarousel, View, {
 	 * @private
 	 */
 	_enableArrowImages: function ( thumbs ) {
-		var offset = this.galleryOffset,
-			lastThumb, nextThumb;
+		const offset = this.galleryOffset;
+		let lastThumb, nextThumb;
 
 		if ( this.galleryOffset === undefined ) {
 			// couldn't find a suitable matching thumbnail so make
@@ -189,8 +186,9 @@ mfExtend( ImageCarousel, View, {
 	 * @instance
 	 */
 	postRender: function () {
-		var
-			$img,
+		let
+			$img;
+		const
 			$el = this.$el,
 			$spinner = icons.spinner().$el,
 			thumbs = this.options.thumbnails || [],
@@ -239,7 +237,8 @@ mfExtend( ImageCarousel, View, {
 		this.$details.prepend( detailsButton.$el );
 
 		this.gateway.getThumb( self.options.title ).then( function ( data ) {
-			var author, url = data.descriptionurl + '#mw-jump-to-license';
+			let author;
+			const url = data.descriptionurl + '#mw-jump-to-license';
 
 			$spinner.hide();
 
@@ -296,7 +295,7 @@ mfExtend( ImageCarousel, View, {
 			showLoadFailMsg();
 		} );
 
-		this.eventBus.on( 'resize:throttled', this._positionImage.bind( this ) );
+		eventBus.on( 'resize:throttled', this._positionImage.bind( this ) );
 		this._positionImage();
 	},
 
@@ -323,18 +322,17 @@ mfExtend( ImageCarousel, View, {
 	 * @private
 	 */
 	_positionImage: function () {
-		var detailsHeight, windowWidth, windowHeight, windowRatio, $img,
-			$window = util.getWindow();
+		const $window = util.getWindow();
 
 		this.adjustDetails();
 		// with a hidden details box we have a little bit more space, we just need to use it
 		// TODO: Get visibility from the model
 		// eslint-disable-next-line no-jquery/no-sizzle
-		detailsHeight = !this.$details.is( ':visible' ) ? 0 : this.$details.outerHeight();
-		windowWidth = $window.width();
-		windowHeight = $window.height() - detailsHeight;
-		windowRatio = windowWidth / windowHeight;
-		$img = this.$el.find( 'img' );
+		const detailsHeight = !this.$details.is( ':visible' ) ? 0 : this.$details.outerHeight();
+		const windowWidth = $window.width();
+		const windowHeight = $window.height() - detailsHeight;
+		const windowRatio = windowWidth / windowHeight;
+		const $img = this.$el.find( 'img' );
 
 		if ( this.imgRatio > windowRatio ) {
 			if ( windowWidth < this.thumbWidth ) {
@@ -364,7 +362,7 @@ mfExtend( ImageCarousel, View, {
 	 * @instance
 	 */
 	adjustDetails: function () {
-		var windowHeight = util.getWindow().height();
+		const windowHeight = util.getWindow().height();
 		if ( this.$el.find( '.image-details' ).height() > windowHeight * 0.50 ) {
 			this.$el.find( '.image-details' ).css( 'max-height', windowHeight * 0.50 );
 		}

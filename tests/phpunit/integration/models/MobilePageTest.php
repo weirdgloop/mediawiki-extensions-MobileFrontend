@@ -2,6 +2,7 @@
 
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\RevisionStore;
+use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityValue;
 use MobileFrontend\Models\MobilePage;
@@ -59,7 +60,7 @@ class MobilePageTest extends MediaWikiIntegrationTestCase {
 	 * @param UserIdentity|null $user
 	 * @return RevisionStore
 	 */
-	private function mockRevisionStore( Title $title, UserIdentity $user = null ) {
+	private function mockRevisionStore( Title $title, ?UserIdentity $user = null ) {
 		$revisionRecordMock = $this->createMock( RevisionRecord::class );
 
 		$revisionRecordMock->method( 'getTimestamp' )
@@ -133,20 +134,6 @@ class MobilePageTest extends MediaWikiIntegrationTestCase {
 	 */
 	private function createTestTitle() {
 		return Title::newFromText( 'Image', NS_MAIN );
-	}
-
-	/**
-	 * @covers ::setLatestTimestamp
-	 * @covers ::getLatestTimestamp
-	 */
-	public function testLatestTimestamp() {
-		$mobilePage = $this->makeMobilePageFactory( $this->createTestTitle(), false );
-		$tsNow = wfTimestamp( TS_MW );
-		$mobilePage->setLatestTimestamp( $tsNow );
-
-		$actual = $mobilePage->getLatestTimestamp();
-
-		$this->assertSame( $tsNow, $actual );
 	}
 
 	/**
@@ -232,42 +219,6 @@ class MobilePageTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers ::getPlaceHolderThumbnailHtml
-	 * @dataProvider getPlaceHolderThumbnailHtmlDataProvider
-	 */
-	public function testGetPlaceHolderThumbnailHtml( $className, $iconClassName, $expected ) {
-		$actual = MobilePage::getPlaceHolderThumbnailHtml( $className, $iconClassName );
-
-		$this->assertSame( $expected, $actual );
-	}
-
-	/**
-	 * @covers ::hasThumbnail
-	 */
-	public function testHasNoThumbnail() {
-		$mPageWithNoFile = $this->makeMobilePageFactory( $this->createTestTitle(), false );
-		$actual = $mPageWithNoFile->hasThumbnail();
-		$this->assertFalse( $actual );
-	}
-
-	/**
-	 * Requires PageImages extension to be installed else, $file will
-	 * always default to "false" when creating the Mobile Page object
-	 * making the test to fail.
-	 *
-	 * @covers ::hasThumbnail
-	 */
-	public function testHasThumbnail() {
-		$fileWidthGreatThanHeight = $this->mockFileFactory( 100 );
-
-		$mPageWithFile = $this->makeMobilePageFactory(
-			$this->createTestTitle(), $fileWidthGreatThanHeight
-		);
-		$actual = $mPageWithFile->hasThumbnail();
-		$this->assertTrue( $actual );
-	}
-
-	/**
 	 * @covers ::getPageImageHtml
 	 * @covers ::getSmallThumbnailHtml
 	 * @dataProvider getSmallThumbnailHtmlWidthLessThanHeightDataProvider
@@ -338,32 +289,6 @@ class MobilePageTest extends MediaWikiIntegrationTestCase {
 		$actual = $mobilePage->getSmallThumbnailHtml( $useBackgroundImage );
 
 		$this->assertSame( $expected, $actual );
-	}
-
-	/**
-	 * Data provider for testGetPlaceHolderThumbnailHtml()
-	 *
-	 * @return array
-	 */
-	public static function getPlaceHolderThumbnailHtmlDataProvider() {
-		return [
-			[
-				'', '',
-				'<div class="list-thumb list-thumb-placeholder"></div>'
-			],
-			[
-				'', 'testicon',
-				'<div class="list-thumb list-thumb-placeholder testicon"></div>'
-			],
-			[
-				'test', '',
-				'<div class="list-thumb list-thumb-placeholder test"></div>'
-			],
-			[
-				'test', 'testicon',
-				'<div class="list-thumb list-thumb-placeholder testicon test"></div>'
-			]
-		];
 	}
 
 	/**

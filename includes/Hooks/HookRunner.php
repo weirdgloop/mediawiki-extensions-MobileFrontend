@@ -4,13 +4,13 @@
 
 namespace MobileFrontend\Hooks;
 
-use IContextSource;
+use MediaWiki\Context\IContextSource;
 use MediaWiki\HookContainer\HookContainer;
+use MediaWiki\Output\OutputPage;
 use MobileContext;
 use MobileFormatter;
 use MobileFrontend\ContentProviders\IContentProvider;
 use MobileFrontend\Features\FeaturesManager;
-use OutputPage;
 use Skin;
 
 /**
@@ -18,14 +18,9 @@ use Skin;
  * @internal
  */
 class HookRunner implements
-	BeforePageDisplayMobileHook,
-	BeforeSpecialMobileDiffDisplayHook,
-	EnterMobileModeHook,
-	GetMobileUrlHook,
 	MobileFrontendBeforeDOMHook,
 	MobileFrontendContentProviderHook,
 	MobileFrontendFeaturesRegistrationHook,
-	MobileSpecialPageStylesHook,
 	RequestContextCreateSkinMobileHook,
 	SpecialMobileEditWatchlistImagesHook
 {
@@ -33,50 +28,6 @@ class HookRunner implements
 
 	public function __construct( HookContainer $hookContainer ) {
 		$this->hookContainer = $hookContainer;
-	}
-
-	/**
-	 * @inheritDoc
-	 */
-	public function onBeforePageDisplayMobile( OutputPage &$out, Skin &$skin ) {
-		return $this->hookContainer->run(
-			'BeforePageDisplayMobile',
-			[ &$out, &$skin ]
-		);
-	}
-
-	/**
-	 * @inheritDoc
-	 */
-	public function onBeforeSpecialMobileDiffDisplay(
-		OutputPage &$output,
-		MobileContext $mobileContext,
-		array $revisions
-	) {
-		return $this->hookContainer->run(
-			'BeforeSpecialMobileDiffDisplay',
-			[ &$output, $mobileContext, $revisions ]
-		);
-	}
-
-	/**
-	 * @inheritDoc
-	 */
-	public function onEnterMobileMode( MobileContext $mobileContext ) {
-		return $this->hookContainer->run(
-			'EnterMobileMode',
-			[ $mobileContext ]
-		);
-	}
-
-	/**
-	 * @inheritDoc
-	 */
-	public function onGetMobileUrl( ?string &$subdomainTokenReplacement, MobileContext $context ) {
-		return $this->hookContainer->run(
-			'GetMobileUrl',
-			[ &$subdomainTokenReplacement, $context ]
-		);
 	}
 
 	/**
@@ -106,16 +57,6 @@ class HookRunner implements
 		return $this->hookContainer->run(
 			'MobileFrontendFeaturesRegistration',
 			[ $featuresManager ]
-		);
-	}
-
-	/**
-	 * @inheritDoc
-	 */
-	public function onMobileSpecialPageStyles( string $id, OutputPage $out ) {
-		return $this->hookContainer->run(
-			'MobileSpecialPageStyles',
-			[ $id, $out ]
 		);
 	}
 

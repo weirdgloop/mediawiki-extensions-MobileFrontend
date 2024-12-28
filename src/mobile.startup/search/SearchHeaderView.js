@@ -3,7 +3,7 @@ const util = require( '../util' ),
 	IconButton = require( '../IconButton' );
 
 /**
- * @extends View
+ * @extends module:mobile.startup/View
  */
 class SearchHeaderView extends View {
 	/**
@@ -28,6 +28,7 @@ class SearchHeaderView extends View {
 			} )
 		);
 	}
+
 	/** @inheritdoc */
 	onInput( ev ) {
 		const query = ev.target.value;
@@ -38,21 +39,24 @@ class SearchHeaderView extends View {
 			this.clearIcon.$el.hide();
 		}
 	}
+
 	/** @inheritdoc */
 	get isTemplateMode() {
 		return true;
 	}
+
 	/** @inheritdoc */
 	get template() {
 		return util.template( `<div class="overlay-title search-header-view">
 		<form method="get" action="{{action}}" class="search-box">
-		<input class="search mw-ui-background-icon-search" type="search" name="search"
+		<input class="search mf-icon-search" type="search" name="search"
 			autocapitalize="{{autocapitalize}}"
 			autocomplete="off" placeholder="{{placeholderMsg}}" aria-label="{{placeholderMsg}}" value="{{searchTerm}}">
 		<input type="hidden" name="title" value="{{defaultSearchPage}}">
 		</form>
 </div>` );
 	}
+
 	/** @inheritdoc */
 	postRender() {
 		const clearIcon = new IconButton( {

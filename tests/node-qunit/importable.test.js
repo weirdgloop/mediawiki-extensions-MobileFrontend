@@ -17,6 +17,18 @@ const path = require( 'path' ),
 
 QUnit.module( 'MobileFrontend imports', {
 	beforeEach: function () {
+		/* eslint-disable-next-line camelcase */
+		global.__non_webpack_require__ = ( module ) => {
+			switch ( module ) {
+				case 'mediawiki.router':
+					return {
+						on: () => {},
+						getPath: () => {}
+					};
+				default:
+					return {};
+			}
+		};
 		sandbox = sinon.sandbox.create();
 		dom.setUp( sandbox, global );
 		jQuery.setUp( sandbox, global );
@@ -30,6 +42,7 @@ QUnit.module( 'MobileFrontend imports', {
 				LookupElement: () => {}
 			}
 		};
+		global.location = new URL( 'https://example.com' );
 		fakeRouter = new OO.EventEmitter();
 		fakeRouter.getPath = sandbox.stub().returns( '' );
 		fakeRouter.back = sandbox.spy();
@@ -59,5 +72,5 @@ QUnit.test( 'All our code is importable in headless Node.js', ( assert ) => {
 		}
 	}
 	assert.strictEqual( errors.length, 0,
-		`There were no errors when importing any of the modules:\n\n${errors.join( '\n' )}` );
+		`There were no errors when importing any of the modules:\n\n${ errors.join( '\n' ) }` );
 } );

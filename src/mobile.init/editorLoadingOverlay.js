@@ -1,4 +1,4 @@
-var
+const
 	fakeToolbar = require( './fakeToolbar' ),
 	IconButton = require( '../mobile.startup/IconButton' ),
 	Overlay = require( '../mobile.startup/Overlay' );
@@ -8,13 +8,15 @@ var
 /**
  * Like loadingOverlay(), but with a fake editor toolbar instead of the spinner.
  *
+ * @private
  * @param {Function} afterShow Callback which runs after overlay is shown
  * @param {Function} afterHide Callback which runs after overlay is hidden
  * @param {Function} [loadBasicEditor] Callback for the "Use basic editor" button
- * @return {Overlay}
+ * @return {module:mobile.startup/Overlay}
  */
-function editorLoadingOverlay( afterShow, afterHide, loadBasicEditor ) {
-	var
+module.exports = function editorLoadingOverlay( afterShow, afterHide, loadBasicEditor ) {
+	let timeout;
+	const
 		$fakeToolbar = fakeToolbar(),
 		$loadBasicWrapper = $( '<div>' ).addClass( 've-loadbasiceditor' ),
 		loadBasicButton = new IconButton( {
@@ -32,8 +34,19 @@ function editorLoadingOverlay( afterShow, afterHide, loadBasicEditor ) {
 			onBeforeExit: function ( exit ) {
 				exit();
 				afterHide();
+				if ( timeout ) {
+					clearTimeout( timeout );
+				}
 			}
-		} );
+		} ),
+		logFeatureUse = function ( feature, action ) {
+			mw.track( 'visualEditorFeatureUse', {
+				feature: feature,
+				action: action,
+				// eslint-disable-next-line camelcase
+				editor_interface: 'visualeditor'
+			} );
+		};
 
 	overlay.show = function () {
 		Overlay.prototype.show.call( this );
@@ -50,12 +63,14 @@ function editorLoadingOverlay( afterShow, afterHide, loadBasicEditor ) {
 			)
 		);
 
-		setTimeout( function () {
+		timeout = setTimeout( function () {
 			$loadBasicWrapper.addClass( 've-loadbasiceditor-shown' );
+			logFeatureUse( 'mobileVisualFallback', 'context-show' );
 		}, 3000 );
 
 		loadBasicButton.$el.on( 'click', function () {
 			$loadBasicWrapper.removeClass( 've-loadbasiceditor-shown' );
+			logFeatureUse( 'mobileVisualFallback', 'fallback-confirm' );
 			loadBasicEditor();
 		} );
 	}
@@ -70,6 +85,4 @@ function editorLoadingOverlay( afterShow, afterHide, loadBasicEditor ) {
 	} );
 
 	return overlay;
-}
-
-module.exports = editorLoadingOverlay;
+};

@@ -1,14 +1,12 @@
-var
+const
 	mfExtend = require( './mfExtend' ),
 	util = require( './util' ),
 	View = require( './View' );
 
 /**
- * A wrapper for creating an icon.
- *
- * @class Icon
- * @extends View
- *
+ * @class module:mobile.startup/Icon
+ * @classdesc A wrapper for creating an icon.
+ * @extends module:mobile.startup/View
  * @param {Object} options Configuration options
  */
 function Icon( options ) {
@@ -21,7 +19,7 @@ mfExtend( Icon, View, {
 	 * @memberof Icon
 	 * @instance
 	 */
-	preRender: function () {
+	preRender() {
 		this.options._iconClasses = this.getIconClasses();
 	},
 	/**
@@ -32,19 +30,19 @@ mfExtend( Icon, View, {
 	 * @instance
 	 * @private
 	 */
-	getRotationClass: function () {
-		var rotationClass = '';
+	getRotationClass() {
+		let rotationClass = '';
 		if ( this.options.rotation ) {
 			switch ( this.options.rotation ) {
 				case -180:
 				case 180:
-					rotationClass = 'mf-mw-ui-icon-rotate-flip';
+					rotationClass = 'mf-icon-rotate-flip';
 					break;
 				case -90:
-					rotationClass = 'mf-mw-ui-icon-rotate-anti-clockwise';
+					rotationClass = 'mf-icon-rotate-anti-clockwise';
 					break;
 				case 90:
-					rotationClass = 'mf-mw-ui-icon-rotate-clockwise';
+					rotationClass = 'mf-icon-rotate-clockwise';
 					break;
 				case 0:
 					break;
@@ -61,14 +59,14 @@ mfExtend( Icon, View, {
 	 * @instance
 	 * @private
 	 */
-	getIconClasses: function () {
-		var base = this.options.base;
-		var icon = this.options.icon;
-		var isSmall = this.options.isSmall;
-		var rotationClasses = this.getRotationClass();
-		var additionalClassNames = this.options.additionalClassNames;
+	getIconClasses() {
+		const base = this.options.base;
+		const icon = this.options.icon;
+		const isSmall = this.options.isSmall;
+		const rotationClasses = this.getRotationClass();
+		const additionalClassNames = this.options.additionalClassNames;
 
-		var classes = base + ' ';
+		let classes = base + ' ';
 		if ( icon ) {
 			classes += this.getGlyphClassName() + ' ';
 		}
@@ -90,7 +88,8 @@ mfExtend( Icon, View, {
 	/**
 	 * @memberof Icon
 	 * @instance
-	 * @mixes View#defaults
+	 * @mixes module:mobile.startup/View#defaults
+	 * @property {Object} defaults
 	 * @property {string} defaults.base Base icon class.
 	 * Defaults to 'mf-icon'.
 	 * @property {string} defaults.glyphPrefix Prefix for the icon class
@@ -103,7 +102,7 @@ mfExtend( Icon, View, {
 	 */
 	defaults: {
 		base: 'mf-icon',
-		glyphPrefix: 'mf',
+		glyphPrefix: null,
 		icon: '',
 		rotation: 0,
 		isSmall: false,
@@ -116,7 +115,7 @@ mfExtend( Icon, View, {
 	 * @instance
 	 * @return {string}
 	 */
-	getClassName: function () {
+	getClassName() {
 		return this.$el.attr( 'class' );
 	},
 	/**
@@ -126,11 +125,11 @@ mfExtend( Icon, View, {
 	 * @instance
 	 * @return {string}
 	 */
-	getGlyphClassName: function () {
+	getGlyphClassName() {
 		if ( this.options.glyphPrefix ) {
-			return 'mw-ui-icon-' + this.options.glyphPrefix + '-' + this.options.icon;
+			return 'mf-icon-' + this.options.glyphPrefix + '-' + this.options.icon;
 		}
-		return 'mw-ui-icon-' + this.options.icon;
+		return 'mf-icon-' + this.options.icon;
 	},
 
 	template: util.template(

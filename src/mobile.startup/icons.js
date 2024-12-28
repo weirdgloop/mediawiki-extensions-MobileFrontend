@@ -1,8 +1,7 @@
-var
+const
 	CANCEL_GLYPH = 'close',
 	Icon = require( './Icon' ),
-	IconButton = require( './IconButton' ),
-	util = require( './util' );
+	IconButton = require( './IconButton' );
 
 /**
  * A set of shared icons.
@@ -15,11 +14,11 @@ var
  * @singleton
  * @uses Icon
  */
-module.exports = {
-	CANCEL_GLYPH: CANCEL_GLYPH,
+const icons = {
+	CANCEL_GLYPH,
 	// Exported to support testing and stubbing
-	Icon: Icon,
-	IconButton: IconButton,
+	Icon,
+	IconButton,
 	/**
 	 * Gets a back icon
 	 *
@@ -30,10 +29,10 @@ module.exports = {
 	 * @instance
 	 * @return {IconButton}
 	 */
-	back: function () {
-		return new IconButton( {
+	back() {
+		return new icons.IconButton( {
 			tagName: 'button',
-			icon: 'previous-base20',
+			icon: 'previous',
 			additionalClassNames: 'back',
 			label: mw.msg( 'mobile-frontend-overlay-close' )
 		} );
@@ -46,16 +45,16 @@ module.exports = {
 	 *
 	 * @memberof icons
 	 * @instance
-	 * @param {string} [variant] defaults to `base20`.
+	 * @param {string} [variant]
 	 * @param {Object} [props] to extend
 	 * @return {IconButton}
 	 */
-	cancel: function ( variant, props = {} ) {
-		var glyph = variant ? `${CANCEL_GLYPH}-${variant}` : `${CANCEL_GLYPH}-base20`;
+	cancel( variant, props = {} ) {
+		const glyph = variant ? `${ CANCEL_GLYPH }-${ variant }` : `${ CANCEL_GLYPH }`;
 		props.additionalClassNames = props.additionalClassNames || '';
 		props.additionalClassNames += ' cancel';
 
-		return new this.IconButton( util.extend( {
+		return new icons.IconButton( Object.assign( {
 			tagName: 'button',
 			icon: glyph,
 			label: mw.msg( 'mobile-frontend-overlay-close' )
@@ -73,12 +72,12 @@ module.exports = {
 	 * @param {Object} [props] See `Icon` for more details
 	 * @return {IconButton}
 	 */
-	spinner: function ( props = {} ) {
+	spinner( props = {} ) {
 		if ( props.additionalClassNames === undefined ) {
 			props.additionalClassNames = 'spinner loading';
 		}
 
-		const spinner = new this.IconButton( util.extend( {
+		const spinner = new icons.IconButton( Object.assign( {
 			tagName: 'span',
 			icon: 'spinner',
 			label: mw.msg( 'mobile-frontend-loading-message' )
@@ -101,8 +100,8 @@ module.exports = {
 	 * @instance
 	 * @return {IconButton}
 	 */
-	error: function () {
-		return new IconButton( {
+	error() {
+		return new icons.IconButton( {
 			icon: 'alert-invert',
 			additionalClassNames: 'load-fail-msg-icon'
 		} );
@@ -115,13 +114,12 @@ module.exports = {
 	 * @param {Object} props
 	 * @return {IconButton}
 	 */
-	watch: function ( props = {} ) {
+	watch( props = {} ) {
 		props.additionalClassNames = props.additionalClassNames || '';
 		props.additionalClassNames += ' watch-this-article';
 
-		return new this.IconButton( util.extend( {
-			icon: 'star-subtle',
-			glyphPrefix: 'mf'
+		return new icons.IconButton( Object.assign( {
+			icon: 'star-subtle'
 		}, props ) );
 	},
 	/**
@@ -132,13 +130,14 @@ module.exports = {
 	 * @param {Object} props
 	 * @return {IconButton}
 	 */
-	watched: function ( props = {} ) {
+	watched( props = {} ) {
 		props.additionalClassNames = props.additionalClassNames || '';
 		props.additionalClassNames += ' watch-this-article watched';
 
-		return new this.IconButton( util.extend( {
-			icon: 'unStar-progressive',
-			glyphPrefix: 'mf'
+		return new icons.IconButton( Object.assign( {
+			icon: 'unStar-progressive'
 		}, props ) );
 	}
 };
+
+module.exports = icons;

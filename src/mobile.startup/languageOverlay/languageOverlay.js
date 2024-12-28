@@ -11,11 +11,10 @@ const
  * @return {jQuery.Promise} Resolves to LanguageSearcher
  */
 function loadLanguageSearcher() {
-	return mw.loader.using( 'mobile.languages.structured' ).then( function () {
-		return currentPageHTMLParser.getLanguages(
+	return mw.loader.using( 'mobile.languages.structured' ).then( () =>
+		currentPageHTMLParser.getLanguages(
 			mw.config.get( 'wgTitle' )
-		);
-	} ).then( function ( data ) {
+		) ).then( ( data ) => {
 		const LanguageSearcher = m.require( 'mobile.languages.structured/LanguageSearcher' );
 
 		return new LanguageSearcher( {
@@ -23,25 +22,28 @@ function loadLanguageSearcher() {
 			variants: data.variants,
 			showSuggestedLanguages: true,
 			deviceLanguage: getDeviceLanguage( navigator ),
-			onOpen: ( searcher ) => {
-				mw.hook( 'mobileFrontend.languageSearcher.onOpen' ).fire( searcher );
-			},
-			onBannerClick: () => {
-				mw.hook( 'mobileFrontend.languageSearcher.onBannerClick' ).fire();
-			}
+			/**
+			 * Stable for use inside ContentTranslation.
+			 * @event ~'mobileFrontend.languageSearcher.onOpen'
+			 * @memberof Hooks
+			 * @param {Hooks~LanguageSearcher} searcher
+			 */
+			onOpen: ( searcher ) => mw.hook( 'mobileFrontend.languageSearcher.onOpen' ).fire( searcher )
 		} );
-	}, function () {
-		return new MessageBox( {
-			className: 'mw-message-box-error content',
+	}, () =>
+		new MessageBox( {
+			type: 'error',
+			className: 'content',
 			msg: mw.msg( 'mobile-frontend-languages-structured-overlay-error' )
-		} );
-	} );
+		} ) );
 }
 
 /**
- * Factory function that returns a language featured instance of an Overlay
+ * Factory function that returns a language featured instance of an Overlay.
  *
- * @return {Overlay}
+ * @function
+ * @memberof module:mobile.startup/languages
+ * @return {module:mobile.startup/Overlay}
  */
 function languageOverlay() {
 	return Overlay.make(
@@ -54,7 +56,7 @@ function languageOverlay() {
 
 // To make knowing when async logic has resolved easier in tests
 languageOverlay.test = {
-	loadLanguageSearcher: loadLanguageSearcher
+	loadLanguageSearcher
 };
 
 module.exports = languageOverlay;

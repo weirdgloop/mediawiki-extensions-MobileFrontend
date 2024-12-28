@@ -1,5 +1,9 @@
 /* global $ */
-var Overlay = require( '../mobile.startup/Overlay' ),
+/**
+ * @class EditorOverlayBase
+ * @private
+ */
+const Overlay = require( '../mobile.startup/Overlay' ),
 	util = require( '../mobile.startup/util' ),
 	parseBlockInfo = require( './parseBlockInfo' ),
 	headers = require( '../mobile.startup/headers' ),
@@ -16,6 +20,7 @@ var Overlay = require( '../mobile.startup/Overlay' ),
  *
  * @param {OO.ui.ToolGroup} toolGroup
  * @param {Object} config
+ * @private
  */
 function EditVeTool( toolGroup, config ) {
 	config = config || {};
@@ -51,6 +56,7 @@ EditVeTool.prototype.onUpdateState = function () {
  * Base class for SourceEditorOverlay and VisualEditorOverlay
  *
  * @class EditorOverlayBase
+ * @private
  * @extends Overlay
  * @uses IconButton
  * @uses user
@@ -59,7 +65,7 @@ EditVeTool.prototype.onUpdateState = function () {
  * @param {boolean} params.hasToolbar whether the editor has a toolbar
  */
 function EditorOverlayBase( params ) {
-	var
+	const
 		options = util.extend(
 			true,
 			{
@@ -222,18 +228,19 @@ mfExtend( EditorOverlayBase, Overlay, {
 	 *
 	 * @memberof EditorOverlayBase
 	 * @instance
-	 * @param {number|null} newRevId ID of the newly created revision, or null if it was a null edit.
+	 * @param {number|null} newRevId ID of the newly created revision, or null if it was a
+	 * null edit.
 	 * @param {string} [redirectUrl] URL to redirect to, if different than the current URL.
 	 * @param {boolean} [tempUserCreated] Whether a temporary user was created
 	 */
 	onSaveComplete: function ( newRevId, redirectUrl, tempUserCreated ) {
-		var
+		const
 			self = this;
 
 		this.saved = true;
 
 		if ( newRevId ) {
-			var action;
+			let action;
 			if ( self.isNewPage ) {
 				action = 'created';
 			} else if ( self.options.oldId ) {
@@ -250,6 +257,10 @@ mfExtend( EditorOverlayBase, Overlay, {
 			// eslint-disable-next-line camelcase
 			revision_id: newRevId
 		} );
+		if ( tempUserCreated && redirectUrl ) {
+			// The caller handles this redirect, either in SourceEditorOverlay or in VE's ArticleTarget
+			return;
+		}
 		setTimeout( function () {
 			// Wait for any other teardown navigation to happen (e.g. router.back())
 			// before setting our final location.
@@ -280,7 +291,7 @@ mfExtend( EditorOverlayBase, Overlay, {
 	 * @param {boolean} [tempUserCreated] Whether a temporary user was created
 	 */
 	showSaveCompleteMsg: function ( action, tempUserCreated ) {
-		mw.loader.require( 'mediawiki.action.view.postEdit' ).fireHook( action, tempUserCreated );
+		__non_webpack_require__( 'mediawiki.action.view.postEdit' ).fireHook( action, tempUserCreated );
 	},
 	/**
 	 * Executed when page save fails. Handles logging the error. Subclasses
@@ -291,7 +302,9 @@ mfExtend( EditorOverlayBase, Overlay, {
 	 * @param {Object} data API response
 	 */
 	onSaveFailure: function ( data ) {
-		var code = data && data.errors && data.errors[0] && data.errors[0].code,
+		let code = data && data.errors && data.errors[0] && data.errors[0].code;
+
+		const
 			// Compare to ve.init.mw.ArticleTargetEvents.js in VisualEditor.
 			typeMap = {
 				badtoken: 'userBadToken',
@@ -331,8 +344,8 @@ mfExtend( EditorOverlayBase, Overlay, {
 	 * @param {string} text Text (HTML) of message to display to user
 	 */
 	reportError: function ( text ) {
-		var errorNotice = new MessageBox( {
-			className: 'mw-message-box-error',
+		const errorNotice = new MessageBox( {
+			type: 'error',
 			msg: text,
 			heading: mw.msg( 'mobile-frontend-editor-error' )
 		} );
@@ -381,6 +394,7 @@ mfExtend( EditorOverlayBase, Overlay, {
 	},
 	/**
 	 * @inheritdoc
+	 * @memberof EditorOverlayBase
 	 */
 	preRender: function () {
 		const options = this.options;
@@ -434,7 +448,7 @@ mfExtend( EditorOverlayBase, Overlay, {
 		this.showHidden( '.initial-header' );
 	},
 	show: function () {
-		var self = this;
+		const self = this;
 		this.allowCloseWindow = mw.confirmCloseWindow( {
 			// Returns true if content has changed
 			test: function () {
@@ -452,6 +466,12 @@ mfExtend( EditorOverlayBase, Overlay, {
 		Overlay.prototype.show.call( this );
 
 		// Inform other interested code that the editor has loaded
+		/**
+		 * Internal for use in ContentTranslation and GrowthExperiments only.
+		 *
+		 * @event ~'mobileFrontend.editorOpened'
+		 * @memberof Hooks
+		 */
 		mw.hook( 'mobileFrontend.editorOpened' ).fire( this.editor );
 	},
 	/**
@@ -493,7 +513,7 @@ mfExtend( EditorOverlayBase, Overlay, {
 	 * @param {Function} cancel Callback to cancel exiting the overlay
 	 */
 	onBeforeExit: function ( exit, cancel ) {
-		var self = this;
+		const self = this;
 		if ( this.hasChanged() && !this.switching ) {
 			if ( !this.windowManager ) {
 				this.windowManager = OO.ui.getWindowManager();
@@ -555,6 +575,12 @@ mfExtend( EditorOverlayBase, Overlay, {
 		if ( this.allowCloseWindow ) {
 			this.allowCloseWindow.release();
 		}
+		/**
+		 * Internal for use in ContentTranslation and GrowthExperiments only.
+		 *
+		 * @event ~'mobileFrontend.editorClosed'
+		 * @memberof Hooks
+		 */
 		mw.hook( 'mobileFrontend.editorClosed' ).fire();
 	},
 	/**
@@ -566,21 +592,19 @@ mfExtend( EditorOverlayBase, Overlay, {
 	 * @return {jQuery.Element}
 	 */
 	createAnonWarning: function ( options ) {
-		var $actions = $( '<div>' ).addClass( 'actions' ),
+		const $actions = $( '<div>' ).addClass( 'actions' ),
 			// Use MediaWiki ResourceLoader require(), not Webpack require()
 			contLangMessages = (
-				// eslint-disable-next-line camelcase
-				typeof __non_webpack_require__ !== 'undefined' ?
-					// eslint-disable-next-line no-undef
-					__non_webpack_require__( './contLangMessages.json' ) :
-					{}
+
+				__non_webpack_require__( './contLangMessages.json' )
 			),
 			msg = this.gateway.wouldautocreate ?
 				'mobile-frontend-editor-autocreatewarning' :
 				'mobile-frontend-editor-anonwarning',
 			$anonWarning = $( '<div>' ).addClass( 'anonwarning content' ).append(
 				new MessageBox( {
-					className: 'mw-message-box-notice anon-msg',
+					type: 'notice',
+					className: 'anon-msg',
 					// eslint-disable-next-line mediawiki/msg-doc
 					msg: mw.message( msg, contLangMessages[ 'tempuser-helppage' ] ).parse()
 				} ).$el,
@@ -639,6 +663,7 @@ mfExtend( EditorOverlayBase, Overlay, {
 	 * specific options, so that it can be used to construct a
 	 * different editor for switching.
 	 *
+	 * @memberof EditorOverlayBase
 	 * @return {Object} Options
 	 */
 	getOptionsForSwitch: function () {
@@ -682,7 +707,7 @@ mfExtend( EditorOverlayBase, Overlay, {
 		return this.dataPromise.then( function ( result ) {
 			// check if user is blocked
 			if ( result && result.blockinfo ) {
-				var block = parseBlockInfo( result.blockinfo ),
+				const block = parseBlockInfo( result.blockinfo ),
 					message = blockMessageDrawer( block );
 				return util.Deferred().reject( message );
 			}
@@ -690,13 +715,13 @@ mfExtend( EditorOverlayBase, Overlay, {
 		} );
 	},
 	showEditNotices: function () {
-		var overlay = this;
-		if ( !mw.config.get( 'wgMFShowEditNotices' ) || mw.config.get( 'wgMFEditNoticesFeatureConflict' ) ) {
+		const overlay = this;
+		if ( mw.config.get( 'wgMFEditNoticesFeatureConflict' ) ) {
 			return;
 		}
 		this.getLoadingPromise().then( function ( data ) {
 			if ( data.notices ) {
-				var editNotices = Object.keys( data.notices ).filter( function ( key ) {
+				const editNotices = Object.keys( data.notices ).filter( function ( key ) {
 					if ( key.indexOf( 'editnotice' ) !== 0 ) {
 						return false;
 					}
@@ -712,7 +737,7 @@ mfExtend( EditorOverlayBase, Overlay, {
 					// expiry window, so just record that a notice with this key has been shown.
 					// If a cheap hashing function was available in core (or the API provided
 					// as hash) it could be used here instead.
-					var storageKey = 'mf-editnotices/' + mw.config.get( 'wgPageName' ) + '#' + key;
+					const storageKey = 'mf-editnotices/' + mw.config.get( 'wgPageName' ) + '#' + key;
 					if ( mw.storage.get( storageKey ) ) {
 						return false;
 					}
@@ -722,9 +747,9 @@ mfExtend( EditorOverlayBase, Overlay, {
 
 				if ( editNotices.length ) {
 					mw.loader.using( 'oojs-ui-windows' ).then( function () {
-						var $container = $( '<div>' ).addClass( 'editor-overlay-editNotices' );
+						const $container = $( '<div>' ).addClass( 'editor-overlay-editNotices' );
 						editNotices.forEach( function ( key ) {
-							var $notice = $( '<div>' ).append( data.notices[ key ] );
+							const $notice = $( '<div>' ).append( data.notices[ key ] );
 							$notice.addClass( 'editor-overlay-editNotice' );
 							$container.append( $notice );
 						} );
@@ -747,7 +772,7 @@ mfExtend( EditorOverlayBase, Overlay, {
 	 * @param {Object} details Details returned from the api.
 	 */
 	handleCaptcha: function ( details ) {
-		var self = this,
+		const self = this,
 			$input = this.$el.find( '.captcha-word' );
 
 		if ( this.captchaShown ) {

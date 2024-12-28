@@ -2,14 +2,14 @@
 // (see https://bugzilla.wikimedia.org/show_bug.cgi?id=44264)
 /**
  * mobileFrontend namespace
- *
- * @class mw.mobileFrontend
- * @singleton
+ * @private
  */
-var skin,
-	url,
+let url;
+
+const
 	toggling = require( './toggling' ),
 	FONT_SIZE_KEY = 'mf-font-size',
+	SECTION_COLLAPSING_TOGGLE = 'mf-expand-sections',
 	storage = mw.storage,
 	api = new mw.Api(),
 	lazyLoadedImages = require( './lazyLoadedImages' ),
@@ -21,7 +21,7 @@ var skin,
 	Skin = require( '../mobile.startup/Skin' ),
 	eventBus = require( '../mobile.startup/eventBusSingleton' );
 
-skin = Skin.getSingleton();
+const skin = Skin.getSingleton();
 
 /**
  * Given 2 functions, it returns a function that will run both with it's
@@ -45,6 +45,7 @@ function apply2( fn1, fn2 ) {
  * resize event throttled to 200 ms.
  *
  * @event resize
+ * @memberof window
  */
 
 /**
@@ -53,16 +54,25 @@ function apply2( fn1, fn2 ) {
  * scroll event throttled to 200 ms.
  *
  * @event scroll
+ * @memberof window
  */
 
 $window
 	.on( 'resize', apply2(
-		mw.util.debounce( function () { eventBus.emit( 'resize' ); }, 100 ),
-		mw.util.throttle( function () { eventBus.emit( 'resize:throttled' ); }, 200 )
+		mw.util.debounce( function () {
+			eventBus.emit( 'resize' );
+		}, 100 ),
+		mw.util.throttle( function () {
+			eventBus.emit( 'resize:throttled' );
+		}, 200 )
 	) )
 	.on( 'scroll', apply2(
-		mw.util.debounce( function () { eventBus.emit( 'scroll' ); }, 100 ),
-		mw.util.throttle( function () { eventBus.emit( 'scroll:throttled' ); }, 200 )
+		mw.util.debounce( function () {
+			eventBus.emit( 'scroll' );
+		}, 100 ),
+		mw.util.throttle( function () {
+			eventBus.emit( 'scroll:throttled' );
+		}, 200 )
 	) );
 
 // Hide URL flags used to pass state through reloads
@@ -94,24 +104,29 @@ if ( mw.config.get( 'wgMFIsSupportedEditRequest' ) ) {
 	editor( currentPage, currentPageHTMLParser, skin );
 }
 
-/**
- * One time action to migrate legacy font size to new system.
- * FIXME: Can be removed in 1 months time and replaced with `storage.remove( 'userFontSize' );`
- */
-function migrateLegacyFontSizeValue() {
-	let currentValue = storage.get( 'userFontSize' );
-	if ( currentValue ) {
-		// x-large is mapped to xlarge but others are the same.
-		currentValue = currentValue.replace( '-', '' );
+function migrateXLargeToLarge() {
+	if ( document.documentElement.classList.contains( 'mf-font-size-clientpref-xlarge' ) ) {
 		if ( mw.user.isAnon() ) {
-			mw.user.clientPrefs.set( FONT_SIZE_KEY, currentValue );
+			mw.user.clientPrefs.set( FONT_SIZE_KEY, 'large' );
 		} else {
-			api.saveOption( FONT_SIZE_KEY, currentValue );
+			api.saveOption( FONT_SIZE_KEY, 'large' );
 		}
-		storage.remove( 'userFontSize' );
 	}
 }
 
-migrateLegacyFontSizeValue();
+function migrateLegacyExpandAllSectionsToggle() {
+	const currentValue = mw.storage.get( 'expandSections' );
+	if ( currentValue ) {
+		if ( mw.user.isAnon() ) {
+			mw.user.clientPrefs.set( SECTION_COLLAPSING_TOGGLE, '1' );
+		} else {
+			api.saveOption( SECTION_COLLAPSING_TOGGLE, '1' );
+		}
+		storage.remove( 'expandSections' );
+	}
+}
+
+migrateXLargeToLarge();
+migrateLegacyExpandAllSectionsToggle();
 toggling();
 lazyLoadedImages();

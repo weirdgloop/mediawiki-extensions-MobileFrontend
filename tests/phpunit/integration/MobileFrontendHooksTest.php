@@ -1,10 +1,19 @@
 <?php
 
+use MediaWiki\Config\HashConfig;
+use MediaWiki\Context\DerivativeContext;
+use MediaWiki\Context\IContextSource;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\MainConfigNames;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\Output\OutputPage;
+use MediaWiki\Parser\ParserOptions;
+use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Request\FauxRequest;
-use MediaWiki\User\UserIdentity;
-use MediaWiki\User\UserOptionsLookup;
+use MediaWiki\Request\WebRequest;
+use MediaWiki\Title\Title;
+use MediaWiki\User\Options\UserOptionsLookup;
+use MediaWiki\User\User;
+use MobileFrontend\Tests\Utils;
 use Psr\Container\ContainerInterface;
 use Wikimedia\ObjectFactory\ObjectFactory;
 
@@ -16,6 +25,20 @@ class MobileFrontendHooksTest extends MediaWikiIntegrationTestCase {
 		parent::setUp();
 
 		MobileContext::resetInstanceForTesting();
+	}
+
+	private function newMobileFrontendHooks(): MobileFrontendHooks {
+		$services = $this->getServiceContainer();
+		return new MobileFrontendHooks(
+			$services->getHookContainer(),
+			$services->getService( 'MobileFrontend.Config' ),
+			$services->getSkinFactory(),
+			$services->getUserOptionsLookup(),
+			$services->getWatchlistManager(),
+			$services->getService( 'MobileFrontend.Context' ),
+			$services->getService( 'MobileFrontend.FeaturesManager' ),
+			null
+		);
 	}
 
 	/**
@@ -90,13 +113,13 @@ class MobileFrontendHooksTest extends MediaWikiIntegrationTestCase {
 	 * @covers MobileFrontendHooks::onBeforePageDisplay
 	 * @dataProvider onBeforePageDisplayDataProvider
 	 */
-	public function testOnBeforePageDisplay( $mobileUrlTemplate, $mfNoindexPages,
+	public function testOnBeforePageDisplay( $useMobileUrl, $mfNoindexPages,
 		$mfEnableXAnalyticsLogging, $mfAutoDetectMobileView, $mfVaryOnUA, $mfXAnalyticsItems,
 		$isAlternateCanonical, $isXAnalytics, $mfVaryHeaderSet
 	) {
 		$this->overrideConfigValues( [
 			'MFEnableManifest' => false,
-			'MobileUrlTemplate' => $mobileUrlTemplate,
+			'MobileUrlCallback' => $useMobileUrl ? [ Utils::class, 'mobileUrlCallback' ] : null,
 			'MFNoindexPages' => $mfNoindexPages,
 			'MFEnableXAnalyticsLogging' => $mfEnableXAnalyticsLogging,
 			'MFAutodetectMobileView' => $mfAutoDetectMobileView,
@@ -109,7 +132,7 @@ class MobileFrontendHooksTest extends MediaWikiIntegrationTestCase {
 		$skin = $param['sk'];
 
 		// run the test
-		( new MobileFrontendHooks )->onBeforePageDisplay( $out, $skin );
+		$this->newMobileFrontendHooks()->onBeforePageDisplay( $out, $skin );
 
 		// test, if alternate or canonical link is added, but not both
 		$links = $out->getLinkTags();
@@ -136,7 +159,7 @@ class MobileFrontendHooksTest extends MediaWikiIntegrationTestCase {
 		$skin = $param['sk'];
 
 		// run the test
-		( new MobileFrontendHooks )->onBeforePageDisplay( $out, $skin );
+		$this->newMobileFrontendHooks()->onBeforePageDisplay( $out, $skin );
 		// test, if alternate or canonical link is added, but not both
 		$links = $out->getLinkTags();
 		$this->assertCount( $isAlternateCanonical, $links,
@@ -168,6 +191,7 @@ class MobileFrontendHooksTest extends MediaWikiIntegrationTestCase {
 	 * SkinTemplate (sk) and OutputPage (out)
 	 */
 	protected function getContextSetup( $mode, $mfXAnalyticsItems, $title = null ) {
+		$this->getServiceContainer()->resetServiceForTesting( 'MobileFrontend.Context' );
 		MobileContext::resetInstanceForTesting();
 		$context = MobileContext::singleton();
 
@@ -199,7 +223,7 @@ class MobileFrontendHooksTest extends MediaWikiIntegrationTestCase {
 	 */
 	public static function onBeforePageDisplayDataProvider() {
 		return [
-			// wgMobileUrlTemplate, wgMFNoindexPages, wgMFEnableXAnalyticsLogging, wgMFAutodetectMobileView,
+			// use mobile URL, wgMFNoindexPages, wgMFEnableXAnalyticsLogging, wgMFAutodetectMobileView,
 			// wgMFVaryOnUA, XanalyticsItems, alternate & canonical link, XAnalytics, Vary header User-Agent
 			[ true, true, true, true, true,
 				[ 'mf-m' => 'a' ], 1, 'mf-m=a', false, ],
@@ -222,7 +246,7 @@ class MobileFrontendHooksTest extends MediaWikiIntegrationTestCase {
 	 */
 	public function testOnTitleSquidURLs() {
 		$this->overrideConfigValues( [
-			'MobileUrlTemplate' => '%h0.m.%h1.%h2',
+			'MobileUrlCallback' => [ Utils::class, 'mobileUrlCallback' ],
 			MainConfigNames::Server => 'http://en.wikipedia.org',
 			MainConfigNames::ArticlePath => '/wiki/$1',
 			MainConfigNames::ScriptPath => '/w',
@@ -230,7 +254,7 @@ class MobileFrontendHooksTest extends MediaWikiIntegrationTestCase {
 		] );
 		$title = Title::newFromText( 'PurgeTest' );
 
-		$htmlCacheUpdater = MediaWikiServices::getInstance()->getHtmlCacheUpdater();
+		$htmlCacheUpdater = $this->getServiceContainer()->getHtmlCacheUpdater();
 		$urls = $htmlCacheUpdater->getUrls( $title );
 
 		$expected = [
@@ -292,6 +316,7 @@ class MobileFrontendHooksTest extends MediaWikiIntegrationTestCase {
 		$enabled,
 		$userpref = false
 	) {
+		$services = $this->getServiceContainer();
 		$this->overrideConfigValue( 'MFEnableMobilePreferences', $enabled );
 
 		$user = $this->createMock( User::class );
@@ -302,11 +327,22 @@ class MobileFrontendHooksTest extends MediaWikiIntegrationTestCase {
 			$userOptLookup->method( 'getOption' )
 				->with( $user, MobileFrontendHooks::MOBILE_PREFERENCES_SPECIAL_PAGES )
 				->willReturn( $userpref ?: $this->returnArgument( 2 ) );
-			$this->setService( 'UserOptionsLookup', $userOptLookup );
+		} else {
+			$userOptLookup = $services->getUserOptionsLookup();
 		}
+		$mobileFrontendHooks = new MobileFrontendHooks(
+			$services->getHookContainer(),
+			$services->getService( 'MobileFrontend.Config' ),
+			$services->getSkinFactory(),
+			$userOptLookup,
+			$services->getWatchlistManager(),
+			$services->getService( 'MobileFrontend.Context' ),
+			$services->getService( 'MobileFrontend.FeaturesManager' ),
+			null
+		);
 		$this->assertSame(
 			$expected,
-			MobileFrontendHooks::shouldMobileFormatSpecialPages( $user )
+			$mobileFrontendHooks->shouldMobileFormatSpecialPages( $user )
 		);
 	}
 
@@ -320,22 +356,20 @@ class MobileFrontendHooksTest extends MediaWikiIntegrationTestCase {
 		string $expectedSkin
 	): void {
 		$userOptionLookup = $this->createMock( UserOptionsLookup::class );
-		$mediaWikiServices = $this->createMock( MediaWikiServices::class );
-		$mediaWikiServices->method( 'getUserOptionsLookup' )->willReturn( $userOptionLookup );
+		$user = new User();
 
 		$webRequest = $this->createMock( WebRequest::class );
 		$webRequest->method( 'getHeader' )->willReturn( false );
-		$webRequest->method( 'getVal' )->willReturn( false );
+		$webRequest->method( 'getRawVal' )->willReturn( null );
 
 		$mobileContext = $this->createMock( MobileContext::class );
 		$mobileContext->method( 'shouldDisplayMobileView' )->willReturn( true );
 		$mobileContext->method( 'getRequest' )->willReturn( $webRequest );
+		$mobileContext->method( 'getUser' )->willReturn( $user );
 
 		$context = $this->createMock( IContextSource::class );
 		$context->method( 'getRequest' )->willReturn( $webRequest );
-		$context->method( 'getUser' )->willReturn(
-			$this->createMock( UserIdentity::class )
-		);
+		$context->method( 'getUser' )->willReturn( $user );
 
 		$skinFactory = new SkinFactory(
 			new ObjectFactory( $this->createMock( ContainerInterface::class ) ), []
@@ -354,17 +388,27 @@ class MobileFrontendHooksTest extends MediaWikiIntegrationTestCase {
 
 		$config = new HashConfig( [
 			'DefaultMobileSkin' => $fakeMobileSkin,
-			'DefaultSkin' => $fakeDefaultSkin,
+			MainConfigNames::DefaultSkin => $fakeDefaultSkin,
 			'MFEnableMobilePreferences' => false,
 		] );
 
 		$this->setService( 'SkinFactory', $skinFactory );
-		$this->setService( 'MobileFrontend.Config', $config );
 		$this->setService( 'MobileFrontend.Context', $mobileContext );
 
 		/** @var Skin $skin */
 		$skin = null;
-		( new MobileFrontendHooks )->onRequestContextCreateSkin( $context, $skin );
+		$services = $this->getServiceContainer();
+		$mobileFrontendHooks = new MobileFrontendHooks(
+			$services->getHookContainer(),
+			$config,
+			$skinFactory,
+			$userOptionLookup,
+			$services->getWatchlistManager(),
+			$services->getService( 'MobileFrontend.Context' ),
+			$services->getService( 'MobileFrontend.FeaturesManager' ),
+			null
+		);
+		$mobileFrontendHooks->onRequestContextCreateSkin( $context, $skin );
 
 		self::assertSame( $expectedSkin, $skin->getSkinName() );
 	}
@@ -374,5 +418,33 @@ class MobileFrontendHooksTest extends MediaWikiIntegrationTestCase {
 			[ 'mobile-skin', 'default-skin', 'mobile-skin' ],
 			[ null, 'default-skin', 'default-skin' ]
 		];
+	}
+
+	public static function provideArticleParserOptions() {
+		return [
+			[ false, false, false ],
+			[ false, true, false ],
+			[ true, false, false ],
+			[ true, true, true ],
+		];
+	}
+
+	/**
+	 * @covers MobileFrontendHooks::onArticleParserOptions
+	 * @dataProvider provideArticleParserOptions
+	 */
+	public function testArticleParserOptions( bool $isMobile, bool $isParsoid, bool $expected ) {
+		// this section of the code depends on the ParserMigration extension being loaded
+		$this->markTestSkippedIfExtensionNotLoaded( 'ParserMigration' );
+
+		MobileContext::singleton()->setForceMobileView( $isMobile );
+		$this->overrideConfigValue( 'ParserMigrationEnableParsoidArticlePages', $isParsoid );
+
+		$article = new Article( Title::newMainPage() );
+		$parserOptions = ParserOptions::newFromAnon();
+
+		$this->newMobileFrontendHooks()->onArticleParserOptions( $article, $parserOptions );
+
+		$this->assertSame( $expected, $parserOptions->getCollapsibleSections() );
 	}
 }
