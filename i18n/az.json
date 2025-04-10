@@ -11,7 +11,8 @@
 			"Vugar 1981",
 			"Wertuose",
 			"Şeyx Şamil",
-			"Nemoralis"
+			"Nemoralis",
+			"Gadir"
 		]
 	},
 	"abusefilter-edit-builder-vars-user-mobile": "İstifadəçinin mobil interfeys vasitəsilə redaktə edib-etməməsi",
@@ -70,7 +71,7 @@
 	"mobile-frontend-editor-licensing": "Dəyişiklikləri yayımlamaqla siz töhfənizin $1 {{PLURAL:$2|lisenziyası|lisenziyaları}} altında yayımlanması ilə razılaşdığınızı bildirmiş olursunuz.",
 	"mobile-frontend-editor-licensing-with-terms": "Dəyişiklikləri yayımlamaqla siz $1ni qəbul edirsiniz və töhfənizin $2 {{PLURAL:$3|lisenziyası|lisenziyaları}} altında yayımlanması ilə razılaşdığınızı bildirmiş olursunuz.",
 	"mobile-frontend-editor-terms-link": "[$1 İstifadə Şərtləri]",
-	"mobile-frontend-editor-new-page-confirm": "{{GENDER:$1|Siz}} {{SITENAME}} layihəsində yeni səhifə yaratmaq istədiyinizdən əminsinizmi?",
+	"mobile-frontend-editor-new-page-confirm": "{{SITENAME}} saytında {{GENDER:$1|yeni səhifə yaratmaq istədiyinizə əminsiniz}}?",
 	"mobile-frontend-editor-placeholder": "Bu bölmə boşdur. Onu ilk genişləndirən siz olun!",
 	"mobile-frontend-editor-placeholder-new-page": "{{GENDER:$1|Siz}} yeni {{SITENAME}} səhifəsi yaradırsınız!",
 	"mobile-frontend-editor-previewing-page": "<span><strong>Sınaq göstərişi:</strong> $1</span>",
@@ -153,7 +154,7 @@
 	"mobile-frontend-settings-beta": "{{SITENAME}} βeta",
 	"mobile-frontend-settings-save": "Nizamlamalar yadda saxlanıldı.",
 	"mobile-frontend-terms-text": "İstifadə Şərtləri",
-	"mobile-frontend-view": "Mobil görüntü",
+	"mobile-frontend-view": "Mobil versiya",
 	"mobile-frontend-view-desktop": "İş masası",
 	"mobile-frontend-watchlist-a-z": "Siyahı",
 	"mobile-frontend-watchlist-a-z-empty-howto": "Hazırda heç bir səhifəni izləmirsiniz. İzləmə siyahınız sizi maraqlandıran səhifələri izləməyə kömək edir. Ulduz işarəsinə toxunmaqla səhifələri əlavə edə bilərsiniz.",
@@ -185,7 +186,7 @@
 	"tag-mobile_edit-description": "Mobil vasitəsilə (veb və ya tətbiqdən) edilən redaktə",
 	"tag-advanced_mobile_edit": "Təkmilləşdirilmiş mobil redaktə",
 	"tag-advanced_mobile_edit-description": "Təkmilləşdirilmiş rejim ilə edilmiş redaktələr",
-	"tag-mobile_web_edit": "Mobil veb redaktə",
+	"tag-mobile_web_edit": "Mobil veb-redaktə",
 	"tag-mobile_web_edit-description": "Mobil veb saytdan redaktə",
 	"mobile-frontend-loading-message": "Yüklənir...",
 	"mobile-frontend-search-feedback-link-text": "Bizə rəy bildirin.",
