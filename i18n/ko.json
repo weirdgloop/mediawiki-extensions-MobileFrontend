@@ -35,7 +35,9 @@
 			"밝은소년",
 			"아라",
 			"Bisang",
-			"YeBoy371"
+			"YeBoy371",
+			"Tensama0415",
+			"解浪"
 		]
 	},
 	"abusefilter-edit-builder-vars-user-mobile": "사용자가 모바일 인터페이스를 통해 편집하고 있는지 여부 ($1)",
@@ -125,6 +127,7 @@
 	"mobile-frontend-languages-structured-overlay-search-input-placeholder": "언어 검색",
 	"mobile-frontend-languages-structured-overlay-no-results": "지원하지 않는 언어",
 	"mobile-frontend-languages-structured-overlay-error": "이 문서에 대한 언어를 불러오는 도중 오류가 발생했습니다.",
+	"mobile-frontend-languages-structured-overlay-no-results-body": "찾으시는 언어는 사용할 수 없습니다.",
 	"mobile-frontend-last-modified-date": "$1 $2에 마지막으로 편집됨",
 	"mobile-frontend-last-modified-with-user-days": "{{PLURAL:$5|[$6 $2]님이|0=익명 사용자가}} [$4 {{PLURAL:$3|$3일}} 전에 마지막으로 {{GENDER:$1|편집함}}]",
 	"mobile-frontend-last-modified-with-user-hours": "{{PLURAL:$5|[$6 $2]님이|0=익명 사용자가}} [$4 {{PLURAL:$3|$3시간}} 전에 마지막으로 {{GENDER:$1|편집함}}]",
@@ -139,6 +142,8 @@
 	"mobile-frontend-media-license-link": "라이선스 정보",
 	"mobile-frontend-media-load-fail-message": "이 그림을 불러오는 동안 오류가 발생했습니다.",
 	"mobile-frontend-media-load-fail-retry": "새로 고침",
+	"mobile-frontend-media-next": "다음 사진 보이기",
+	"mobile-frontend-media-prev": "이전 사진 보이기",
 	"mobile-frontend-missing-image": "그림",
 	"mobile-frontend-opt-in-explain": "{{SITENAME}} 베타 기능은 이 실험적인 기능들을 시도해보고 저희에게 소중한 의견을 제공할 수 있는 수단입니다",
 	"mobile-frontend-overlay-close": "닫기",
@@ -175,8 +180,8 @@
 	"mobile-frontend-user-page-desired-action": "이 문서는 $1님만이 만들고 편집할 수 있습니다",
 	"mobile-frontend-user-page-create-owner-page-link-label": "직접 만들기",
 	"mobile-frontend-user-page-create-user-page-link-label": "$1 제목의 문서 만들기",
-	"mobile.css": "/* 여기의 모든 CSS는 모바일 사이트를 사용하는 사용자에게 로드됩니다 */",
-	"mobile.js": "/* 여기의 자바스크립트는 모바일 사이트를 사용하는 사용자에게 로드됩니다 */",
+	"mobile.css": "/* 이 CSS 설정은 모바일 사이트를 사용하는 사용자에게 적용됩니다 */",
+	"mobile.js": "/* 이 자바스크립트 설정은 모바일 사이트를 사용하는 사용자에게 적용됩니다 */",
 	"tag-mobile_edit": "모바일 편집",
 	"tag-mobile_edit-description": "모바일 (웹 또는 앱)에서의 편집",
 	"tag-advanced_mobile_edit": "고급 모바일 편집",
