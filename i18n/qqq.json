@@ -42,7 +42,8 @@
 			"Wellwisher",
 			"Yekrats",
 			"Ата",
-			"아라"
+			"아라",
+			"Stjn"
 		]
 	},
 	"abusefilter-edit-builder-vars-user-mobile": "AbuseFilter extension rule variable that allows distinguishing edits based on if they have been made using the editor of MobileFrontend or not.\n\nParameters:\n* $1 - text that will be inserted into the filter code editor",
@@ -86,7 +87,7 @@
 	"mobile-frontend-editor-error-loading": "Text that displays when there have been errors when loading a page section in the editor.\n\nUsed as \"toast\" error message.",
 	"mobile-frontend-editor-error-preview": "Error message for when a preview fails to load for an unknown reason",
 	"mobile-frontend-editor-keep-editing": "Caption for a button that takes you back to editing from edit preview screen.",
-	"mobile-frontend-license-links": "{{notranslate}}\nOverriden by {{msg-mw|wikimedia-mobile-license-links}} or set on wiki.",
+	"mobile-frontend-license-links": "{{notranslate}}\nOverridden by {{msg-mw|wikimedia-mobile-license-links}} or set on wiki.",
 	"mobile-frontend-editor-licensing": "Text notifying user of license that text will be published under.\nParameters:\n* $1 - link to license\n* $2 - If $1 contains more than one license (1 -> one license; 2 -> more licenses)",
 	"mobile-frontend-editor-licensing-with-terms": "Text notifying user of license that text will be published under.\nParameters:\n* $1 - link to terms of service, see {{msg-mw|Mobile-frontend-editor-terms-link}}\n* $2 - link to license\n* $3 - If $1 contains more than one license (1 -> one license; 2 -> more licenses)",
 	"mobile-frontend-editor-terms-link": "Terms of Use link used in {{msg-mw|Mobile-frontend-editor-licensing-with-terms}}.\nParameters:\n* $1 - URL, link target",
@@ -130,7 +131,7 @@
 	"mobile-frontend-language-heading": "The title for the list of languages for a page.\n{{Identical|Language}}",
 	"mobile-frontend-languages-structured-overlay-suggested-languages-header": "Title of the suggested languages in the structured language overlay. The text will be upper-cased with JS and CSS.\nSee also {{msg-wm|uls-uls-common-languages}}",
 	"mobile-frontend-languages-structured-overlay-all-languages-header": "Title of all languages in the structured language overlay. The text will be upper-cased with JS and CSS.",
-	"mobile-frontend-languages-structured-overlay-search-input-placeholder": "Instructional text for the language overlay search input box",
+	"mobile-frontend-languages-structured-overlay-search-input-placeholder": "Instructional text for the language overlay search input box. ''Search'' is a verb here.\n\n{{Identical|Search languages}}",
 	"mobile-frontend-languages-structured-overlay-no-results": "Shown when language search failed to find any matching languages",
 	"mobile-frontend-languages-structured-overlay-error": "Error shown to user when languages fail to load through no fault of their own.",
 	"mobile-frontend-languages-structured-overlay-no-results-body": "Explanation message shown when language search failed to find any matching languages",
